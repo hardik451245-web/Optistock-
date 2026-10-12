@@ -27,7 +27,7 @@ try {
 
 # ─── 1. Roo Code ─────────────────────────────────────────────────────────────
 Write-Host "--- Roo Code ---"
-$roo = $extensions | Where-Object { $_ -match 'rooveterinaryinc\.roo-cline|saoudrizwan\.claude-dev' }
+$roo = $extensions | Where-Object { $_ -match 'rooveterinaryinc\.roo-cline|saoudrizwan\.claude-dev|roo-cline' }
 if ($roo) {
     Write-Status 'OK' "Roo Code extension installed ($roo)"
 } else {
@@ -38,12 +38,12 @@ Write-Host ""
 
 # ─── 2. CodeRabbit ────────────────────────────────────────────────────────────
 Write-Host "--- CodeRabbit ---"
-$cr = $extensions | Where-Object { $_ -match 'coderabbit' }
+$cr = $extensions | Where-Object { $_ -match 'coderabbit\.coderabbit-vscode|coderabbitai\.coderabbit' }
 if ($cr) {
     Write-Status 'OK' "CodeRabbit extension installed ($cr)"
 } else {
     Write-Status 'PROBLEM' "CodeRabbit extension is NOT installed."
-    Write-Status 'INFO'    "Install with: code --install-extension coderabbitai.coderabbit-vscode"
+    Write-Status 'INFO'    "Install with: code --install-extension CodeRabbit.coderabbit-vscode"
 }
 
 # CodeRabbit needs a git repo
@@ -64,12 +64,12 @@ Write-Host ""
 
 # ─── 3. GSD (Get Stuff Done) ─────────────────────────────────────────────────
 Write-Host "--- GSD (Get Stuff Done) ---"
-$gsd = $extensions | Where-Object { $_ -match 'gsd' }
+$gsd = $extensions | Where-Object { $_ -match 'fluxlabs\.gsd|gsd' }
 if ($gsd) {
     Write-Status 'OK' "GSD extension installed ($gsd)"
 } else {
     Write-Status 'PROBLEM' "GSD extension is NOT installed."
-    Write-Status 'INFO'    "Search for 'GSD' in the VS Code Marketplace and install it."
+    Write-Status 'INFO'    "Install with: code --install-extension FluxLabs.gsd-2"
 }
 
 # Check for gsd-pi CLI (Node global)

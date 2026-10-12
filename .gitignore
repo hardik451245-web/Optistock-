@@ -1,20 +1,27 @@
-# Build output
+# Build outputs
 target/
+dist/
 *.class
 
-# IDE
+# Node / Frontend
+node_modules/
+optistock-frontend/node_modules/
+optistock-frontend/dist/
+
+# IDE / Editors
 .idea/
 *.iml
 .vscode/
 
-# OS
+# OS metadata
 desktop.ini
 Thumbs.db
 .DS_Store
 
-# Frontend
-optistock-frontend/node_modules/
-optistock-frontend/dist/
+# Environment & Local Configuration
+.env
+.env.*
+application-local.properties
 
 # Logs
 *.log

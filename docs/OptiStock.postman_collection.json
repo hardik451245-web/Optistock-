@@ -1,0 +1,580 @@
+{
+	"info": {
+		"_postman_id": "optistock-ai-collection-v1",
+		"name": "OptiStock AI API Collection",
+		"description": "Comprehensive Postman collection for the OptiStock AI inventory and billing platform, including automated token persistence scripts and role-based request templates.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "managerToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "cashierToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login - Manager",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var data = pm.response.json();",
+									"if (data.token) {",
+									"    pm.collectionVariables.set('token', data.token);",
+									"    pm.collectionVariables.set('managerToken', data.token);",
+									"    pm.test('Token saved to collection variables', function () {",
+									"        pm.expect(data.token).to.be.a('string');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"manager@optistock.com\",\n  \"password\": \"manager123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"login"
+							]
+						}
+					}
+				},
+				{
+					"name": "Login - Cashier",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var data = pm.response.json();",
+									"if (data.token) {",
+									"    pm.collectionVariables.set('token', data.token);",
+									"    pm.collectionVariables.set('cashierToken', data.token);",
+									"    pm.test('Cashier token saved', function () {",
+									"        pm.expect(data.token).to.be.a('string');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"cashier@optistock.com\",\n  \"password\": \"cashier123\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								"login"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "Get Products (with Expiry Quotes)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"products"
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Product (Manager)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Green Tea Premium\",\n  \"brand\": \"Organic India\",\n  \"category\": \"Beverages\",\n  \"costPrice\": 120.00,\n  \"sellingPrice\": 180.00,\n  \"stockQuantity\": 50,\n  \"reorderThreshold\": 15,\n  \"expiryDate\": \"2026-12-31\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/products",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"products"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Product (Manager)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Green Tea Premium - 100g\",\n  \"brand\": \"Organic India\",\n  \"category\": \"Beverages\",\n  \"costPrice\": 120.00,\n  \"sellingPrice\": 175.00,\n  \"stockQuantity\": 45,\n  \"reorderThreshold\": 15,\n  \"expiryDate\": \"2026-12-31\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/products/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Product (Manager)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/products/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"1"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Billing & POS",
+			"item": [
+				{
+					"name": "Create Bill",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"items\": [\n    {\n      \"productId\": 2,\n      \"quantity\": 2,\n      \"manualDiscountPercent\": 0\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/bills",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"bills"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Bills (Today)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/bills",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"bills"
+							]
+						}
+					}
+				},
+				{
+					"name": "Cancel Bill (Manager)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/bills/1/cancel",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"bills",
+								"1",
+								"cancel"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Manager Analytics",
+			"item": [
+				{
+					"name": "Get Demand Forecast",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/manager/forecast",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"manager",
+								"forecast"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Urgent Reorders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/manager/reorder",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"manager",
+								"reorder"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Inventory Alerts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/manager/alerts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"manager",
+								"alerts"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Sales Summary",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/manager/summary",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"manager",
+								"summary"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get SKU Profit Ranking",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/manager/ranking?days=30",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"manager",
+								"ranking"
+							],
+							"query": [
+								{
+									"key": "days",
+									"value": "30"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get 80/20 Product Mix",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/manager/product-mix?days=30",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"manager",
+								"product-mix"
+							],
+							"query": [
+								{
+									"key": "days",
+									"value": "30"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Discount Approvals",
+			"item": [
+				{
+					"name": "Submit Discount Request",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"productId\": 2,\n  \"requestedPercent\": 25.00,\n  \"reason\": \"Bulk purchase discount\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/discount-requests",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"discount-requests"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Pending Requests (Manager)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/discount-requests/pending",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"discount-requests",
+								"pending"
+							]
+						}
+					}
+				},
+				{
+					"name": "Approve Discount Request (Manager)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/discount-requests/1/approve",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"discount-requests",
+								"1",
+								"approve"
+							]
+						}
+					}
+				},
+				{
+					"name": "Reject Discount Request (Manager)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{managerToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/discount-requests/1/reject",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"discount-requests",
+								"1",
+								"reject"
+							]
+						}
+					}
+				}
+			]
+		}
+	]
+}

@@ -36,5 +36,5 @@ export function clearAuth() {
 }
 
 export function dashboardPath(role) {
-  return role === 'MANAGER' ? '/manager' : '/cashier'
+  return String(role || '').toUpperCase() === 'MANAGER' ? '/manager' : '/cashier'
 }

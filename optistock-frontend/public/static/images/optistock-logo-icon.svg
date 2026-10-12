@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Glowing subtle backdrop glow -->
+  <defs>
+    <linearGradient id="aiBrainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#2563eb" />
+    </linearGradient>
+    <linearGradient id="growthGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+    <linearGradient id="cartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+  </defs>
+
+  <!-- AI Brain / Circuit Network Top -->
+  <g id="ai-brain" opacity="0.95">
+    <!-- Neural Nodes & Synaptic Paths -->
+    <path d="M42 22 C42 16, 52 14, 56 18 C60 14, 70 16, 70 23 C74 25, 75 32, 70 35 C70 41, 60 43, 56 39 C51 43, 42 40, 42 34 C38 31, 38 25, 42 22 Z" 
+          fill="none" stroke="url(#aiBrainGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Circuit internal traces -->
+    <path d="M50 20 L56 26 L62 20 M56 26 L56 36 M46 29 L56 29 L66 29" 
+          stroke="url(#aiBrainGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Synaptic Nodes -->
+    <circle cx="56" cy="26" r="2.2" fill="#38bdf8" />
+    <circle cx="50" cy="20" r="1.6" fill="#38bdf8" />
+    <circle cx="62" cy="20" r="1.6" fill="#38bdf8" />
+    <circle cx="46" cy="29" r="1.6" fill="#60a5fa" />
+    <circle cx="66" cy="29" r="1.6" fill="#60a5fa" />
+    <circle cx="56" cy="36" r="1.8" fill="#38bdf8" />
+  </g>
+
+  <!-- Fresh Goods Inside Cart -->
+  <g id="groceries">
+    <!-- Fresh apple / orange -->
+    <circle cx="34" cy="42" r="6" fill="#f43f5e" />
+    <path d="M34 36 C35 34, 38 34, 38 36" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" />
+    <!-- Produce / packet -->
+    <rect x="42" y="38" width="9" height="12" rx="2" fill="#fbbf24" />
+    <!-- Dairy container -->
+    <rect x="25" y="41" width="8" height="9" rx="1.5" fill="#38bdf8" opacity="0.85" />
+  </g>
+
+  <!-- High-Tech Shopping Cart -->
+  <g id="shopping-cart">
+    <!-- Handle & Cart Basket Frame -->
+    <path d="M14 36 L21 36 L28 62 L62 62 L67 44 L24 44" 
+          fill="none" stroke="url(#cartGrad)" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Inner Basket Grid lines -->
+    <line x1="33" y1="46" x2="35" y2="60" stroke="#475569" stroke-width="1.8" stroke-linecap="round" />
+    <line x1="42" y1="46" x2="43" y2="60" stroke="#475569" stroke-width="1.8" stroke-linecap="round" />
+    <line x1="51" y1="46" x2="51" y2="60" stroke="#475569" stroke-width="1.8" stroke-linecap="round" />
+    <line x1="60" y1="46" x2="59" y2="58" stroke="#475569" stroke-width="1.8" stroke-linecap="round" />
+    <line x1="27" y1="52" x2="64" y2="52" stroke="#475569" stroke-width="1.8" stroke-linecap="round" />
+    <!-- Wheels -->
+    <circle cx="33" cy="71" r="4.2" fill="#0f172a" />
+    <circle cx="33" cy="71" r="1.8" fill="#f8fafc" />
+    <circle cx="57" cy="71" r="4.2" fill="#0f172a" />
+    <circle cx="57" cy="71" r="1.8" fill="#f8fafc" />
+  </g>
+
+  <!-- Green Growth Trend Bars & Arrow on Right -->
+  <g id="growth-trend">
+    <rect x="71" y="58" width="5.5" height="12" rx="1.5" fill="url(#growthGrad)" />
+    <rect x="79" y="50" width="5.5" height="20" rx="1.5" fill="url(#growthGrad)" />
+    <rect x="87" y="40" width="5.5" height="30" rx="1.5" fill="url(#growthGrad)" />
+    <!-- Upward Trend Arrow -->
+    <path d="M68 53 L78 43 L88 34 M88 34 L82 34 M88 34 L88 40" 
+          stroke="#10b981" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>

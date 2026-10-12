@@ -9,8 +9,8 @@ export default function ProtectedRoute({ role, children }) {
     return <Navigate to="/" replace />
   }
 
-  if (role && user.role !== role) {
-    return <Navigate to={user.role === 'MANAGER' ? '/manager' : '/cashier'} replace />
+  if (role && String(user.role || '').toUpperCase() !== String(role).toUpperCase()) {
+    return <Navigate to={String(user.role || '').toUpperCase() === 'MANAGER' ? '/manager' : '/cashier'} replace />
   }
 
   return children
