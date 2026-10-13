@@ -247,3 +247,54 @@ export function listStockMovements(params = {}) {
   const qs = q.toString()
   return request(`/api/stock/movements${qs ? `?${qs}` : ''}`)
 }
+
+export function getDemandForecast(horizon = 30, category = '', productType = '') {
+  const q = new URLSearchParams()
+  if (horizon) q.set('horizon', horizon)
+  if (category) q.set('category', category)
+  if (productType) q.set('productType', productType)
+  const qs = q.toString()
+  return request(`/api/manager/demand-forecast${qs ? `?${qs}` : ''}`)
+}
+
+export function getProductDemandForecast(productId, horizon = 30) {
+  return request(`/api/manager/demand-forecast/${productId}?horizon=${horizon}`)
+}
+
+export function listSuppliers() {
+  return request('/api/manager/suppliers')
+}
+
+export function createSupplier(data) {
+  return request('/api/manager/suppliers', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export function updateSupplier(id, data) {
+  return request(`/api/manager/suppliers/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+}
+
+export function deleteSupplier(id) {
+  return request(`/api/manager/suppliers/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export function approvePurchaseOrder(id) {
+  return request(`/api/purchase-orders/${id}/approve`, {
+    method: 'PUT',
+  })
+}
+
+export function markPurchaseOrderOrdered(id, supplierName = '') {
+  const qs = supplierName ? `?supplierName=${encodeURIComponent(supplierName)}` : ''
+  return request(`/api/purchase-orders/${id}/mark-ordered${qs}`, {
+    method: 'PUT',
+  })
+}
+

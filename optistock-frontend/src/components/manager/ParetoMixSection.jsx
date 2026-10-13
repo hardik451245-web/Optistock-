@@ -1,450 +1,497 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
-  TrendingUp,
-  AlertTriangle,
-  ArrowRight,
-  Package,
+  PieChart,
   Layers,
-  Sparkles,
-  ShoppingBag,
-  PlusCircle,
-  HelpCircle,
+  Package,
+  TrendingUp,
+  ShoppingCart,
   CheckCircle2,
+  Info,
 } from 'lucide-react'
+import { getProductMix } from '../../api'
+import { useReorder } from '../../context/ReorderContext'
 
-export default function ParetoMixSection({
-  token,
-  onNavigateToReorder,
-  onAddReorderSuggestion,
-}) {
-  const [filterPeriod, setFilterPeriod] = useState('month') // 'week' | 'month' | 'year'
+export default function ParetoMixSection() {
+  const { openReorder, reorderVersion } = useReorder()
+
+  const [periodDays, setPeriodDays] = useState(30)
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState('ALL')
   const [loading, setLoading] = useState(true)
-  const [paretoData, setParetoData] = useState(null)
+  const [mixGroups, setMixGroups] = useState([])
   const [error, setError] = useState(null)
-  const [reorderSuccess, setReorderSuccess] = useState('')
-
-  const days = filterPeriod === 'week' ? 7 : filterPeriod === 'year' ? 365 : 30
 
   useEffect(() => {
-    fetchPareto()
-  }, [days])
-
-  async function fetchPareto() {
+    let active = true
     setLoading(true)
     setError(null)
-    try {
-      const res = await fetch(`/api/manager/pareto?days=${days}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'X-Auth-Token': token,
-        },
+
+    getProductMix(periodDays)
+      .then((data) => {
+        if (!active) return
+        setMixGroups(Array.isArray(data) ? data : [])
+        setLoading(false)
       })
-      if (!res.ok) throw new Error('Failed to load Pareto data')
-      const data = await res.json()
-      setParetoData(data)
-    } catch (err) {
-      console.error(err)
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function handleQuickReorder(item) {
-    if (onAddReorderSuggestion) {
-      onAddReorderSuggestion({
-        productId: item.productId,
-        productName: item.name,
-        quantity: item.suggestedReorderQty || 25,
-        supplier: 'Default Supplier',
+      .catch((err) => {
+        if (!active) return
+        setError(err.message || 'Failed to load product mix')
+        setLoading(false)
       })
-    }
-    setReorderSuccess(`Added reorder suggestion for ${item.name} (${item.suggestedReorderQty || 25} units)!`)
-    setTimeout(() => setReorderSuccess(''), 4000)
-  }
 
-  function getProductImage(item) {
-    const slug = (item.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-    const knownImages = ['alphonso-mango', 'tomato', 'potato', 'onion', 'gulab-jamun-tin']
-    if (knownImages.includes(slug)) {
-      return `/static/images/products/${slug}.jpg`
+    return () => {
+      active = false
     }
-    return null
-  }
+  }, [periodDays, reorderVersion])
 
-  const items = paretoData?.items || []
-  const chartItems = items.slice(0, 10) // Top 10 for clean visualization
-  const maxProfit = chartItems.reduce((max, item) => Math.max(max, Number(item.profit || 0)), 1)
+  // Extract unique productTypes for filter pills
+  const availableTypes = useMemo(() => {
+    const list = mixGroups.map((g) => g.productType).filter(Boolean)
+    return Array.from(new Set(list))
+  }, [mixGroups])
+
+  // Filter groups
+  const filteredGroups = useMemo(() => {
+    if (selectedTypeFilter === 'ALL') return mixGroups
+    return mixGroups.filter((g) => g.productType === selectedTypeFilter)
+  }, [mixGroups, selectedTypeFilter])
+
+  const handleOrderMix = (group) => {
+    const items = (group.brands || []).map((b) => ({
+      productId: b.productId,
+      name: b.name,
+      brand: b.brand,
+      suggestedSharePercent: Number(b.suggestedSharePercent || 0),
+      suggestedQty: b.unitsToOrder > 0 ? b.unitsToOrder : 5,
+      costPrice: 0,
+    }))
+
+    openReorder({
+      mode: 'mix',
+      productType: group.productType,
+      items,
+    })
+  }
 
   return (
-    <div className="section-container">
-      {/* Header bar */}
-      <div className="section-header-row">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '0 4px' }}>
+      {/* Header & Controls Bar */}
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '8px',
+          border: '1px solid #E2E8F0',
+          padding: '16px 20px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '14px',
+        }}
+      >
         <div>
-          <h2 className="section-title">80-20 Mix Analysis</h2>
-          <p className="section-subtitle">
-            Pareto Optimization: allocate 80% inventory capital to top performers generating 80% profits.
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#0F172A' }}>
+            80-20 Mix: Brand Portfolio Optimization
+          </h2>
+          <p style={{ margin: '3px 0 0', fontSize: '13px', color: '#64748B' }}>
+            Allocate 80% reorder budget to the winning brand with higher unit margin and profitability.
           </p>
         </div>
 
-        {/* Week | Month | Year Toggle */}
-        <div className="period-toggle-group">
-          <button
-            type="button"
-            className={`period-toggle-btn ${filterPeriod === 'week' ? 'active' : ''}`}
-            onClick={() => setFilterPeriod('week')}
-          >
-            Week
-          </button>
-          <button
-            type="button"
-            className={`period-toggle-btn ${filterPeriod === 'month' ? 'active' : ''}`}
-            onClick={() => setFilterPeriod('month')}
-          >
-            Month
-          </button>
-          <button
-            type="button"
-            className={`period-toggle-btn ${filterPeriod === 'year' ? 'active' : ''}`}
-            onClick={() => setFilterPeriod('year')}
-          >
-            Year
-          </button>
+        {/* Period Selector (7d, 30d, 90d) */}
+        <div style={{ display: 'inline-flex', backgroundColor: '#F1F5F9', borderRadius: '6px', padding: '3px' }}>
+          {[
+            { label: '7 Days', val: 7 },
+            { label: '30 Days', val: 30 },
+            { label: '90 Days', val: 90 },
+          ].map((opt) => (
+            <button
+              key={opt.val}
+              type="button"
+              onClick={() => setPeriodDays(opt.val)}
+              style={{
+                border: 'none',
+                padding: '6px 14px',
+                borderRadius: '4px',
+                fontSize: '13px',
+                fontWeight: periodDays === opt.val ? 600 : 400,
+                backgroundColor: periodDays === opt.val ? '#FFFFFF' : 'transparent',
+                color: periodDays === opt.val ? '#0F172A' : '#64748B',
+                boxShadow: periodDays === opt.val ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+                cursor: 'pointer',
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {reorderSuccess && (
-        <div className="success-banner-bubble">
-          <CheckCircle2 size={18} />
-          <span>{reorderSuccess}</span>
-          {onNavigateToReorder && (
+      {/* Product Type Filter Pills */}
+      {availableTypes.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setSelectedTypeFilter('ALL')}
+            style={{
+              padding: '5px 12px',
+              borderRadius: '20px',
+              border: selectedTypeFilter === 'ALL' ? '1px solid #0F172A' : '1px solid #CBD5E1',
+              backgroundColor: selectedTypeFilter === 'ALL' ? '#0F172A' : '#FFFFFF',
+              color: selectedTypeFilter === 'ALL' ? '#FFFFFF' : '#475569',
+              fontSize: '12px',
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            All Product Types ({mixGroups.length})
+          </button>
+          {availableTypes.map((type) => (
             <button
+              key={type}
               type="button"
-              className="view-reorders-inline-btn"
-              onClick={onNavigateToReorder}
+              onClick={() => setSelectedTypeFilter(type)}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '20px',
+                border: selectedTypeFilter === type ? '1px solid #0F172A' : '1px solid #CBD5E1',
+                backgroundColor: selectedTypeFilter === type ? '#0F172A' : '#FFFFFF',
+                color: selectedTypeFilter === type ? '#FFFFFF' : '#475569',
+                fontSize: '12px',
+                fontWeight: 500,
+                cursor: 'pointer',
+              }}
             >
-              View in Orders &rarr;
+              {type}
             </button>
-          )}
+          ))}
         </div>
       )}
 
-      {/* Top 3 Stat Cards */}
-      <div className="pareto-stat-grid">
-        <div className="pareto-card card-pink-purple">
-          <div className="card-top-meta">
-            <span className="card-badge-pill">Class A</span>
-            <TrendingUp size={20} className="card-icon" />
-          </div>
-          <div className="card-number-val">
-            {paretoData ? `${paretoData.classAProfitPercent || 0}%` : '...'}
-          </div>
-          <div className="card-label-name">Class A Profit Share</div>
-          <div className="card-delta-sub">
-            Generated by {paretoData?.classACount || 0} top fast-moving products
-          </div>
+      {/* Content State */}
+      {loading ? (
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '8px',
+            border: '1px solid #E2E8F0',
+            padding: '50px',
+            textAlign: 'center',
+            color: '#64748B',
+          }}
+        >
+          Evaluating brand portfolio margins and calculating 80-20 splits...
         </div>
-
-        <div className="pareto-card card-blue-mint">
-          <div className="card-top-meta">
-            <span className="card-badge-pill">Distribution</span>
-            <Layers size={20} className="card-icon" />
-          </div>
-          <div className="card-number-val">
-            {paretoData ? `₹${Number(paretoData.totalProfit || 0).toLocaleString('en-IN')}` : '...'}
-          </div>
-          <div className="card-label-name">Total Realized Profit</div>
-          <div className="card-delta-sub">
-            {paretoData?.classBCount || 0} Class B · {paretoData?.classCCount || 0} Class C items
-          </div>
+      ) : error ? (
+        <div
+          style={{
+            backgroundColor: '#FEF2F2',
+            borderRadius: '8px',
+            border: '1px solid #FECACA',
+            padding: '20px',
+            color: '#991B1B',
+          }}
+        >
+          {error}
         </div>
-
-        <div className="pareto-card card-white-elevation">
-          <div className="card-top-meta">
-            <span className="card-badge-pill">Strategy</span>
-            <Sparkles size={20} className="card-icon text-indigo" />
-          </div>
-          <div className="card-number-val text-dark">
-            80 / 20
-          </div>
-          <div className="card-label-name">Optimal Stock Mix</div>
-          <div className="card-delta-sub">
-            Max profit retention with zero stock-out risk
-          </div>
+      ) : filteredGroups.length === 0 ? (
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '8px',
+            border: '1px solid #E2E8F0',
+            padding: '50px',
+            textAlign: 'center',
+            color: '#64748B',
+          }}
+        >
+          No product groups available for mix optimization.
         </div>
-      </div>
+      ) : (
+        /* Card Grid: Each card represents one productType */
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(460px, 1fr))',
+            gap: '20px',
+          }}
+        >
+          {filteredGroups.map((group) => {
+            const brands = group.brands || []
+            const groupNeed = group.groupNeed ?? 0
+            const displaySentence = group.sentence || group.recommendation || ''
+            const isNeedZero = groupNeed <= 0
 
-      {/* Smart Strategy Recommendation Banner */}
-      {paretoData && (
-        <div className="smart-mix-recommendation-box">
-          <div className="recommendation-icon-tile">
-            <Sparkles size={22} color="#4f46e5" />
-          </div>
-          <div className="recommendation-content">
-            <div className="recommendation-title">Smart Stock-Mix Recommendation</div>
-            <div className="recommendation-text">{paretoData.smartRecommendation}</div>
-          </div>
-          {onNavigateToReorder && (
-            <button
-              type="button"
-              className="recommendation-action-btn"
-              onClick={onNavigateToReorder}
-            >
-              <span>Manage Reorders</span>
-              <ArrowRight size={16} />
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Pareto Chart: Bars + Cumulative % curve */}
-      <div className="pareto-chart-card">
-        <div className="chart-header-row">
-          <div>
-            <h3 className="chart-card-title">Pareto Curve & Product Profit Contribution</h3>
-            <p className="chart-card-subtitle">
-              Cumulative % profit line with 80% threshold marker
-            </p>
-          </div>
-          <div className="chart-legend-row">
-            <div className="legend-item">
-              <span className="legend-dot bg-blue" />
-              <span>Profit (₹)</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-line-dot bg-indigo" />
-              <span>Cumulative %</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-dashed-line bg-red" />
-              <span>80% Target</span>
-            </div>
-          </div>
-        </div>
-
-        {/* SVG Pareto Chart */}
-        <div className="pareto-chart-canvas-wrap">
-          <svg className="pareto-svg" viewBox="0 0 800 240" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="paretoBarGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#38bdf8" />
-                <stop offset="100%" stopColor="#818cf8" />
-              </linearGradient>
-            </defs>
-
-            {/* 80% Marker Line */}
-            <line
-              x1="40"
-              y1={200 - (80 * 1.6)}
-              x2="780"
-              y2={200 - (80 * 1.6)}
-              stroke="#f43f5e"
-              strokeWidth="1.5"
-              strokeDasharray="4 4"
-            />
-            <text x="740" y={200 - (80 * 1.6) - 5} fill="#f43f5e" fontSize="10" fontWeight="600">
-              80% Line
-            </text>
-
-            {/* Grid baseline */}
-            <line x1="40" y1="200" x2="780" y2="200" stroke="#e2e8f0" strokeWidth="1" />
-
-            {/* Bars and Line Points */}
-            {chartItems.map((item, idx) => {
-              const x = 50 + idx * 72
-              const barHeight = maxProfit > 0 ? (Number(item.profit || 0) / maxProfit) * 150 : 10
-              const yBar = 200 - barHeight
-              const cumPct = Number(item.cumulativePercent || 0)
-              const yLine = 200 - (cumPct * 1.6)
-
-              return (
-                <g key={item.productId || idx}>
-                  {/* Bar */}
-                  <rect
-                    x={x - 16}
-                    y={yBar}
-                    width="32"
-                    height={Math.max(barHeight, 4)}
-                    rx="6"
-                    fill="url(#paretoBarGrad)"
-                    opacity={item.classification === 'A' ? 0.95 : 0.65}
-                  />
-                  {/* Product short name */}
-                  <text
-                    x={x}
-                    y="218"
-                    fontSize="9.5"
-                    fill="#64748b"
-                    textAnchor="middle"
-                    className="chart-bar-label"
-                  >
-                    {(item.name || '').slice(0, 8)}..
-                  </text>
-                  {/* Profit above bar */}
-                  <text
-                    x={x}
-                    y={yBar - 6}
-                    fontSize="9"
-                    fontWeight="600"
-                    fill="#1e293b"
-                    textAnchor="middle"
-                  >
-                    ₹{Math.round(Number(item.profit || 0))}
-                  </text>
-                </g>
-              )
-            })}
-
-            {/* Cumulative % Connected Line */}
-            {chartItems.length > 1 && (
-              <polyline
-                fill="none"
-                stroke="#4f46e5"
-                strokeWidth="2.5"
-                points={chartItems
-                  .map((item, idx) => `${50 + idx * 72},${200 - Number(item.cumulativePercent || 0) * 1.6}`)
-                  .join(' ')}
-              />
-            )}
-
-            {/* Cumulative Nodes */}
-            {chartItems.map((item, idx) => {
-              const x = 50 + idx * 72
-              const y = 200 - Number(item.cumulativePercent || 0) * 1.6
-              return (
-                <g key={`node-${idx}`}>
-                  <circle cx={x} cy={y} r="4" fill="#ffffff" stroke="#4f46e5" strokeWidth="2.5" />
-                  <text x={x} y={y - 8} fontSize="9" fontWeight="700" fill="#4f46e5" textAnchor="middle">
-                    {Math.round(Number(item.cumulativePercent || 0))}%
-                  </text>
-                </g>
-              )
-            })}
-          </svg>
-        </div>
-      </div>
-
-      {/* Breakdown Table */}
-      <div className="pareto-table-card">
-        <div className="table-header-title-bar">
-          <div>
-            <h3 className="chart-card-title">Catalog Pareto Breakdown</h3>
-            <p className="chart-card-subtitle">
-              Class A (Top ~20%), Class B (Middle ~15%), Class C (Long Tail)
-            </p>
-          </div>
-        </div>
-
-        <div className="custom-table-wrap">
-          <table className="custom-modern-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Category</th>
-                <th>Class</th>
-                <th>Profit (₹)</th>
-                <th>Profit Share</th>
-                <th>Cumulative %</th>
-                <th>Current Stock</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="8" className="table-empty-cell">Loading real database data...</td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="table-empty-cell">No sales records found for this period.</td>
-                </tr>
-              ) : (
-                items.map((item) => {
-                  const img = getProductImage(item)
-                  const isA = item.classification === 'A'
-                  const isB = item.classification === 'B'
-
-                  return (
-                    <tr key={item.productId} className={item.isUnderstocked ? 'row-highlight-understocked' : ''}>
-                      <td>
-                        <div className="table-product-cell">
-                          {img ? (
-                            <img src={img} alt={item.name} className="product-table-thumb" />
-                          ) : (
-                            <div className="product-table-thumb-fallback">
-                              <Package size={16} />
-                            </div>
-                          )}
-                          <div>
-                            <div className="product-cell-name">{item.name}</div>
-                            <div className="product-cell-brand">{item.brand || 'Standard'}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="category-pill-tag">{item.category}</span>
-                      </td>
-                      <td>
-                        <span className={`class-badge class-${item.classification}`}>
-                          Class {item.classification}
+            return (
+              <div
+                key={group.productType}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '10px',
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 1px 3px rgba(15, 23, 42, 0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Card Header */}
+                <div
+                  style={{
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #E2E8F0',
+                    backgroundColor: '#FAFAFA',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#0F172A' }}>
+                        {group.productType}
+                      </h3>
+                      {group.category && (
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            backgroundColor: '#E2E8F0',
+                            color: '#334155',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                          }}
+                        >
+                          {group.category}
                         </span>
-                      </td>
-                      <td className="text-bold">
-                        ₹{Number(item.profit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                      </td>
-                      <td>{item.sharePercent}%</td>
-                      <td>
-                        <div className="cum-bar-container">
-                          <span>{item.cumulativePercent}%</span>
-                          <div className="cum-bar-track">
+                      )}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+                      30d Forecast: <strong>{group.groupForecast30}</strong> | Stock:{' '}
+                      <strong>{group.groupStock}</strong> | On Order:{' '}
+                      <strong>{group.groupOnOrder}</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '11px', color: '#64748B', display: 'block' }}>Group Need</span>
+                    <span
+                      style={{
+                        fontSize: '15px',
+                        fontWeight: 700,
+                        color: isNeedZero ? '#10B981' : '#2563EB',
+                      }}
+                    >
+                      {isNeedZero ? '0 units' : `${groupNeed} units`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Brands Table */}
+                <div style={{ padding: '16px 20px', flex: 1 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid #E2E8F0', color: '#64748B', textAlign: 'left' }}>
+                        <th style={{ padding: '6px 8px', fontWeight: 600 }}>Brand</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 600 }}>Sold ({periodDays}d)</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>Total Profit</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>Profit/Unit</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>Margin</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 600 }}>Cur. Share</th>
+                        <th style={{ padding: '6px 8px', textAlign: 'center', fontWeight: 700, color: '#0F172A' }}>
+                          Rec. Share
+                        </th>
+                        <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>Order Qty</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {brands.map((b) => {
+                        const isTop = Number(b.suggestedSharePercent) >= 80
+                        return (
+                          <tr
+                            key={b.productId}
+                            style={{
+                              borderBottom: '1px solid #F1F5F9',
+                              backgroundColor: isTop ? '#F0FDF4' : 'transparent',
+                            }}
+                          >
+                            <td style={{ padding: '8px', fontWeight: 600, color: '#0F172A' }}>
+                              {b.brand || b.name}
+                              {isTop && (
+                                <span
+                                  style={{
+                                    marginLeft: '6px',
+                                    fontSize: '10px',
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    backgroundColor: '#DCFCE7',
+                                    color: '#15803D',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  Top Brand
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'center', color: '#334155' }}>
+                              {b.unitsSold}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: '#334155' }}>
+                              Rs. {Number(b.profit || 0).toFixed(2)}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: '#334155' }}>
+                              Rs. {Number(b.profitPerUnit || 0).toFixed(2)}
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right', color: '#334155' }}>
+                              {Number(b.marginPercent || 0).toFixed(1)}%
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'center', color: '#64748B' }}>
+                              {Number(b.currentSharePercent || 0).toFixed(0)}%
+                            </td>
+                            <td
+                              style={{
+                                padding: '8px',
+                                textAlign: 'center',
+                                fontWeight: 700,
+                                color: isTop ? '#15803D' : '#1E293B',
+                              }}
+                            >
+                              {Number(b.suggestedSharePercent || 0).toFixed(0)}%
+                            </td>
+                            <td
+                              style={{
+                                padding: '8px',
+                                textAlign: 'right',
+                                fontWeight: 600,
+                                color: b.unitsToOrder > 0 ? '#2563EB' : '#94A3B8',
+                              }}
+                            >
+                              {b.unitsToOrder}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+
+                  {/* Visual Split Bar (80/20 horizontal bar) */}
+                  {brands.length > 1 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <div
+                        style={{
+                          height: '14px',
+                          borderRadius: '7px',
+                          display: 'flex',
+                          overflow: 'hidden',
+                          backgroundColor: '#E2E8F0',
+                        }}
+                      >
+                        {brands.map((b, idx) => {
+                          const pct = Number(b.suggestedSharePercent || 0)
+                          if (pct <= 0) return null
+                          const color = idx === 0 ? '#10B981' : idx === 1 ? '#3B82F6' : '#F59E0B'
+                          return (
                             <div
-                              className="cum-bar-fill"
-                              style={{ width: `${Math.min(100, Number(item.cumulativePercent || 0))}%` }}
+                              key={b.productId}
+                              style={{
+                                width: `${pct}%`,
+                                backgroundColor: color,
+                                transition: 'width 0.3s ease',
+                              }}
+                              title={`${b.brand}: ${pct}%`}
                             />
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="stock-level-indicator">
-                          <span className={`stock-count ${item.currentStock <= item.reorderThreshold ? 'text-red' : ''}`}>
-                            {item.currentStock} units
-                          </span>
-                          {item.isUnderstocked && (
-                            <span className="stock-flag-badge danger">Understocked Fast Mover</span>
-                          )}
-                          {item.isOverstocked && (
-                            <span className="stock-flag-badge warning">Overstocked Slow Mover</span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        {item.isUnderstocked ? (
-                          <button
-                            type="button"
-                            className="btn-add-reorder-instant"
-                            onClick={() => handleQuickReorder(item)}
-                          >
-                            <PlusCircle size={14} />
-                            <span>Add to Reorder</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="btn-add-reorder-neutral"
-                            onClick={() => handleQuickReorder(item)}
-                          >
-                            <span>Reorder</span>
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+                          )
+                        })}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          marginTop: '4px',
+                          fontSize: '11px',
+                          color: '#64748B',
+                        }}
+                      >
+                        {brands.map((b, idx) => {
+                          const color = idx === 0 ? '#10B981' : idx === 1 ? '#3B82F6' : '#F59E0B'
+                          return (
+                            <span key={b.productId} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <span
+                                style={{
+                                  width: '8px',
+                                  height: '8px',
+                                  borderRadius: '50%',
+                                  backgroundColor: color,
+                                  display: 'inline-block',
+                                }}
+                              />
+                              {b.brand}: {Number(b.suggestedSharePercent || 0).toFixed(0)}%
+                            </span>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Prominent Recommendation Sentence Callout Box */}
+                  <div
+                    style={{
+                      marginTop: '16px',
+                      padding: '12px 14px',
+                      borderRadius: '6px',
+                      backgroundColor: isNeedZero ? '#F8FAFC' : '#EFF6FF',
+                      border: isNeedZero ? '1px solid #E2E8F0' : '1px solid #BFDBFE',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                    }}
+                  >
+                    <Info
+                      size={16}
+                      color={isNeedZero ? '#64748B' : '#2563EB'}
+                      style={{ marginTop: '2px', flexShrink: 0 }}
+                    />
+                    <div style={{ fontSize: '13px', color: isNeedZero ? '#475569' : '#1E40AF', lineHeight: 1.45 }}>
+                      <strong>Recommendation:</strong> {displaySentence}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Footer Action */}
+                <div
+                  style={{
+                    padding: '12px 20px',
+                    borderTop: '1px solid #E2E8F0',
+                    backgroundColor: '#FAFAFA',
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleOrderMix(group)}
+                    disabled={isNeedZero}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: isNeedZero ? '#E2E8F0' : '#0F172A',
+                      color: isNeedZero ? '#94A3B8' : '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: isNeedZero ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <ShoppingCart size={15} />
+                    {isNeedZero ? 'Stock Adequate' : 'Order this mix'}
+                  </button>
+                </div>
+              </div>
+            )
+          })}
         </div>
-      </div>
+      )}
     </div>
   )
 }

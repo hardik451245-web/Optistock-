@@ -2,7 +2,6 @@ package com.optistock.service;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,28 +24,35 @@ public class ProductService {
 	private final ProductRepository productRepository;
 	private final ExpiryPricingService expiryPricingService;
 	private final PurchaseOrderRepository purchaseOrderRepository;
+	private final java.time.Clock clock;
 
 	@org.springframework.beans.factory.annotation.Autowired
 	public ProductService(ProductRepository productRepository, ExpiryPricingService expiryPricingService,
-			PurchaseOrderRepository purchaseOrderRepository) {
+			PurchaseOrderRepository purchaseOrderRepository, java.time.Clock clock) {
 		this.productRepository = productRepository;
 		this.expiryPricingService = expiryPricingService;
 		this.purchaseOrderRepository = purchaseOrderRepository;
+		this.clock = clock != null ? clock : java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata"));
+	}
+
+	public ProductService(ProductRepository productRepository, ExpiryPricingService expiryPricingService,
+			PurchaseOrderRepository purchaseOrderRepository) {
+		this(productRepository, expiryPricingService, purchaseOrderRepository, java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata")));
 	}
 
 	public ProductService(ProductRepository productRepository, ExpiryPricingService expiryPricingService) {
-		this(productRepository, expiryPricingService, null);
+		this(productRepository, expiryPricingService, null, java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata")));
 	}
 
 	public List<ProductResponse> listProducts() {
-		LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+		LocalDate today = LocalDate.now(clock);
 		return productRepository.findByActiveTrue().stream()
 				.map(p -> toResponse(p, today))
 				.collect(Collectors.toList());
 	}
 
 	public ProductResponse getProduct(Long id) {
-		LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+		LocalDate today = LocalDate.now(clock);
 		Product product = productRepository.findByIdAndActiveTrue(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Product " + id + " not found"));
 		return toResponse(product, today);
@@ -59,7 +65,7 @@ public class ProductService {
 		apply(product, request);
 		product.setActive(true);
 		product = productRepository.save(product);
-		return toResponse(product, LocalDate.now(ZoneId.of("Asia/Kolkata")));
+		return toResponse(product, LocalDate.now(clock));
 	}
 
 	@Transactional
@@ -69,7 +75,7 @@ public class ProductService {
 				.orElseThrow(() -> new ResourceNotFoundException("Product " + id + " not found"));
 		apply(product, request);
 		product = productRepository.save(product);
-		return toResponse(product, LocalDate.now(ZoneId.of("Asia/Kolkata")));
+		return toResponse(product, LocalDate.now(clock));
 	}
 
 	@Transactional
@@ -81,7 +87,7 @@ public class ProductService {
 	}
 
 	public List<ProductResponse> findAlternatives(Long productId) {
-		LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+		LocalDate today = LocalDate.now(clock);
 		Product source = productRepository.findByIdAndActiveTrue(productId)
 				.orElseThrow(() -> new ResourceNotFoundException("Product " + productId + " not found"));
 

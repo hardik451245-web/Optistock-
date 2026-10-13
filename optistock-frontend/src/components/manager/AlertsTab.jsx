@@ -1,16 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
-import { getAlerts, createPurchaseOrder, writeoffStock } from '../../api'
+import { getAlerts, writeoffStock } from '../../api'
+import { useReorder } from '../../context/ReorderContext'
 
 export default function AlertsTab({ onNavigateToStock, onRefreshProducts }) {
+  const { openReorder, reorderVersion } = useReorder()
+
   const [alerts, setAlerts] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoadingId, setActionLoadingId] = useState(null)
   const [actionSuccess, setActionSuccess] = useState('')
-
-  // Reorder dialog
-  const [reorderItem, setReorderItem] = useState(null)
-  const [orderQty, setOrderQty] = useState(10)
 
   // Write off dialog
   const [writeoffItem, setWriteoffItem] = useState(null)
@@ -31,29 +30,7 @@ export default function AlertsTab({ onNavigateToStock, onRefreshProducts }) {
 
   useEffect(() => {
     loadAlerts()
-  }, [loadAlerts])
-
-  async function handleConfirmReorder() {
-    if (!reorderItem || orderQty <= 0) return
-    const prodId = reorderItem.id || reorderItem.productId
-    setActionLoadingId(prodId)
-    setError('')
-    setActionSuccess('')
-    try {
-      await createPurchaseOrder({
-        productId: prodId,
-        quantity: Number(orderQty),
-      })
-      setActionSuccess(`Reorder purchase order created for ${reorderItem.name}`)
-      setReorderItem(null)
-      await loadAlerts()
-      if (onRefreshProducts) await onRefreshProducts()
-    } catch (err) {
-      setError(err.message || 'Failed to place reorder')
-    } finally {
-      setActionLoadingId(null)
-    }
-  }
+  }, [loadAlerts, reorderVersion])
 
   async function handleConfirmWriteoff() {
     if (!writeoffItem || !writeoffReason.trim()) {
@@ -130,11 +107,18 @@ export default function AlertsTab({ onNavigateToStock, onRefreshProducts }) {
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
                     <button
                       type="button"
-                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', borderRadius: '6px', background: '#0d9488', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                      disabled={actionLoadingId === item.productId}
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', borderRadius: '6px', background: '#0F172A', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
                       onClick={() => {
-                        setReorderItem(item)
-                        setOrderQty(Math.max(10, (item.reorderThreshold || 5) * 2))
+                        openReorder({
+                          productId: item.productId || item.id,
+                          product: {
+                            id: item.productId || item.id,
+                            name: item.name,
+                            stockQuantity: item.stock,
+                            reorderThreshold: item.reorderThreshold,
+                          },
+                          suggestedQty: Math.max(1, (item.reorderThreshold || 5) * 2 - (item.stock || 0)),
+                        })
                       }}
                     >
                       Reorder
@@ -297,44 +281,7 @@ export default function AlertsTab({ onNavigateToStock, onRefreshProducts }) {
         )}
       </div>
 
-      {/* Modal Reorder from Alert */}
-      {reorderItem && (
-        <div className="modal-overlay" onClick={() => setReorderItem(null)}>
-          <div className="glass-panel modal-content" onClick={(e) => e.stopPropagation()} style={{ width: 'min(420px, 92vw)' }}>
-            <h2 style={{ fontSize: '1.2rem', marginTop: 0 }}>Reorder Stock</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Create a purchase order for <strong>{reorderItem.name}</strong>
-            </p>
-            <div style={{ marginTop: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 4 }}>Order Quantity</label>
-              <input
-                type="number"
-                min="1"
-                className="glass-input"
-                style={{ borderRadius: '6px' }}
-                value={orderQty}
-                onChange={(e) => setOrderQty(e.target.value)}
-              />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
-              <button
-                type="button"
-                style={{ padding: '0.5rem 1rem', borderRadius: '6px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', cursor: 'pointer' }}
-                onClick={() => setReorderItem(null)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                style={{ padding: '0.5rem 1rem', borderRadius: '6px', background: '#0d9488', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                onClick={handleConfirmReorder}
-              >
-                Place Order
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Modal Write Off from Alert */}
       {writeoffItem && (

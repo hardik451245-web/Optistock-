@@ -24,6 +24,27 @@ public class ParetoItem {
 	public ParetoItem() {
 	}
 
+	public ParetoItem(Long productId, String name, String brand, String category, Integer currentStock,
+			Integer reorderThreshold, long qtySold, BigDecimal revenue, BigDecimal profit, BigDecimal marginPercent) {
+		this.productId = productId;
+		this.name = name;
+		this.brand = brand;
+		this.category = category;
+		this.currentStock = currentStock;
+		this.reorderThreshold = reorderThreshold;
+		this.qtySold = (int) qtySold;
+		this.revenue = revenue;
+		this.profit = profit;
+		this.marginPercent = marginPercent;
+	}
+
+	public void setCumulativeProfitPercent(BigDecimal cumulativePercent) {
+		this.cumulativePercent = cumulativePercent;
+	}
+
+	public void setRecommendation(String recommendation) {
+	}
+
 	public Long getProductId() {
 		return productId;
 	}

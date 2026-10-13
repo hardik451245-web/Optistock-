@@ -3,7 +3,6 @@ package com.optistock.service;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,12 +32,21 @@ public class PurchaseOrderService {
 	private final PurchaseOrderRepository purchaseOrderRepository;
 	private final ProductRepository productRepository;
 	private final StockMovementRepository stockMovementRepository;
+	private final java.time.Clock clock;
 
+	@org.springframework.beans.factory.annotation.Autowired
 	public PurchaseOrderService(PurchaseOrderRepository purchaseOrderRepository,
-			ProductRepository productRepository, StockMovementRepository stockMovementRepository) {
+			ProductRepository productRepository, StockMovementRepository stockMovementRepository,
+			java.time.Clock clock) {
 		this.purchaseOrderRepository = purchaseOrderRepository;
 		this.productRepository = productRepository;
 		this.stockMovementRepository = stockMovementRepository;
+		this.clock = clock != null ? clock : java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata"));
+	}
+
+	public PurchaseOrderService(PurchaseOrderRepository purchaseOrderRepository,
+			ProductRepository productRepository, StockMovementRepository stockMovementRepository) {
+		this(purchaseOrderRepository, productRepository, stockMovementRepository, java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata")));
 	}
 
 	@Transactional
@@ -66,7 +74,7 @@ public class PurchaseOrderService {
 		po.setSupplierWhatsapp(request.getSupplierWhatsapp());
 		po.setSupplierEmail(request.getSupplierEmail());
 		po.setUnitCost(request.getUnitCost() != null ? request.getUnitCost() : product.getCostPrice());
-		
+
 		BigDecimal totalCost = request.getTotalCost();
 		if (totalCost == null && po.getUnitCost() != null) {
 			totalCost = po.getUnitCost().multiply(BigDecimal.valueOf(request.getQuantity()));
@@ -75,14 +83,16 @@ public class PurchaseOrderService {
 		po.setExpectedDeliveryDate(request.getExpectedDeliveryDate());
 		po.setNotes(request.getNotes());
 
-		if (Boolean.TRUE.equals(request.getIsSuggested())) {
-			po.setStatus(PurchaseOrderStatus.SUGGESTED);
+		if (Boolean.TRUE.equals(request.getIsSuggested())
+				|| request.getStatus() == PurchaseOrderStatus.PENDING
+				|| request.getStatus() == PurchaseOrderStatus.SUGGESTED) {
+			po.setStatus(PurchaseOrderStatus.PENDING);
 		} else {
 			po.setStatus(PurchaseOrderStatus.ORDERED);
 		}
 
 		po.setOrderedBy(orderedBy);
-		po.setOrderedAt(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
+		po.setOrderedAt(LocalDateTime.now(clock));
 
 		po = purchaseOrderRepository.save(po);
 		if (po.getPoNumber() == null || po.getPoNumber().startsWith("PO-PENDING")) {
@@ -98,8 +108,8 @@ public class PurchaseOrderService {
 		PurchaseOrder po = purchaseOrderRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Purchase order not found: " + id));
 
-		po.setStatus(PurchaseOrderStatus.APPROVED);
-		po.setApprovedAt(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
+		po.setStatus(PurchaseOrderStatus.ORDERED);
+		po.setApprovedAt(LocalDateTime.now(clock));
 		po.setApprovedBy(approvedBy);
 		po = purchaseOrderRepository.save(po);
 
@@ -113,7 +123,7 @@ public class PurchaseOrderService {
 				.orElseThrow(() -> new ResourceNotFoundException("Purchase order not found: " + id));
 
 		po.setStatus(PurchaseOrderStatus.ORDERED);
-		po.setSentAt(LocalDateTime.now(ZoneId.of("Asia/Kolkata")));
+		po.setSentAt(LocalDateTime.now(clock));
 		po.setSentChannel(channel != null ? channel : "MANUAL");
 		if (orderedBy != null) {
 			po.setOrderedBy(orderedBy);
@@ -136,8 +146,15 @@ public class PurchaseOrderService {
 		List<PurchaseOrderResponse> responses = new ArrayList<>();
 		for (BulkPurchaseOrderItem item : items) {
 			if (item.getProductId() != null && item.getQuantity() != null && item.getQuantity() > 0) {
-				responses.add(createOrder(new CreatePurchaseOrderRequest(
-						item.getProductId(), item.getQuantity(), item.getSupplier()), orderedBy));
+				CreatePurchaseOrderRequest req = new CreatePurchaseOrderRequest(
+						item.getProductId(), item.getQuantity(), item.getSupplier());
+				req.setSupplierId(item.getSupplierId());
+				req.setUnitCost(item.getUnitCost());
+				req.setTotalCost(item.getTotalCost());
+				req.setExpectedDeliveryDate(item.getExpectedDeliveryDate());
+				req.setNotes(item.getNotes());
+				req.setIsSuggested(item.getIsSuggested());
+				responses.add(createOrder(req, orderedBy));
 			}
 		}
 		return responses;
@@ -146,7 +163,15 @@ public class PurchaseOrderService {
 	@Transactional(readOnly = true)
 	public List<PurchaseOrderResponse> listOrders(PurchaseOrderStatus status) {
 		List<PurchaseOrder> orders;
-		if (status != null) {
+		if (status == PurchaseOrderStatus.PENDING || status == PurchaseOrderStatus.SUGGESTED) {
+			orders = purchaseOrderRepository.findAllByOrderByOrderedAtDesc().stream()
+					.filter(o -> o.getStatus() == PurchaseOrderStatus.PENDING || o.getStatus() == PurchaseOrderStatus.SUGGESTED)
+					.collect(Collectors.toList());
+		} else if (status == PurchaseOrderStatus.ORDERED || status == PurchaseOrderStatus.APPROVED) {
+			orders = purchaseOrderRepository.findAllByOrderByOrderedAtDesc().stream()
+					.filter(o -> o.getStatus() == PurchaseOrderStatus.ORDERED || o.getStatus() == PurchaseOrderStatus.APPROVED)
+					.collect(Collectors.toList());
+		} else if (status != null) {
 			orders = purchaseOrderRepository.findByStatusOrderByOrderedAtDesc(status);
 		} else {
 			orders = purchaseOrderRepository.findAllByOrderByOrderedAtDesc();
@@ -180,7 +205,7 @@ public class PurchaseOrderService {
 				? request.getReceivedQuantity()
 				: po.getQuantity();
 
-		LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+		LocalDate today = LocalDate.now(clock);
 
 		// Perishables batch expiry rule
 		if (product.getExpiryDate() != null) {
@@ -204,7 +229,7 @@ public class PurchaseOrderService {
 		product.setStockQuantity(currentStock + qtyToReceive);
 		productRepository.save(product);
 
-		LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Kolkata"));
+		LocalDateTime now = LocalDateTime.now(clock);
 		po.setStatus(PurchaseOrderStatus.RECEIVED);
 		po.setReceivedQuantity(qtyToReceive);
 		po.setReceivedAt(now);

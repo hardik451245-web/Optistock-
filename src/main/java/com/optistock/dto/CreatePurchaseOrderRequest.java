@@ -17,6 +17,7 @@ public class CreatePurchaseOrderRequest {
 	private LocalDate expectedDeliveryDate;
 	private String notes;
 	private Boolean isSuggested = false;
+	private com.optistock.entity.PurchaseOrderStatus status;
 
 	public CreatePurchaseOrderRequest() {
 	}
@@ -121,5 +122,13 @@ public class CreatePurchaseOrderRequest {
 
 	public void setIsSuggested(Boolean isSuggested) {
 		this.isSuggested = isSuggested;
+	}
+
+	public com.optistock.entity.PurchaseOrderStatus getStatus() {
+		return status;
+	}
+
+	public void setStatus(com.optistock.entity.PurchaseOrderStatus status) {
+		this.status = status;
 	}
 }

@@ -2,6 +2,7 @@ package com.optistock.config;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -41,24 +42,32 @@ public class DemoDataSeeder implements ApplicationRunner {
 	private final BillItemRepository billItemRepository;
 	private final UserRepository userRepository;
 	private final com.optistock.repository.SupplierRepository supplierRepository;
-	private final com.optistock.repository.PurchaseOrderRepository purchaseOrderRepository;
+	private final Clock clock;
 
+	@org.springframework.beans.factory.annotation.Autowired
 	public DemoDataSeeder(ProductRepository productRepository, BillRepository billRepository,
 			BillItemRepository billItemRepository, UserRepository userRepository,
 			com.optistock.repository.SupplierRepository supplierRepository,
-			com.optistock.repository.PurchaseOrderRepository purchaseOrderRepository) {
+			Clock clock) {
 		this.productRepository = productRepository;
 		this.billRepository = billRepository;
 		this.billItemRepository = billItemRepository;
 		this.userRepository = userRepository;
 		this.supplierRepository = supplierRepository;
-		this.purchaseOrderRepository = purchaseOrderRepository;
+		this.clock = clock != null ? clock : Clock.system(ZoneId.of("Asia/Kolkata"));
+	}
+
+	public DemoDataSeeder(ProductRepository productRepository, BillRepository billRepository,
+			BillItemRepository billItemRepository, UserRepository userRepository,
+			com.optistock.repository.SupplierRepository supplierRepository) {
+		this(productRepository, billRepository, billItemRepository, userRepository,
+				supplierRepository, Clock.system(ZoneId.of("Asia/Kolkata")));
 	}
 
 	@Override
 	@Transactional
 	public void run(ApplicationArguments args) {
-		LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+		LocalDate today = LocalDate.now(clock);
 		seedSuppliersAndOrders(today);
 
 		if (productRepository.count() > 0) {
@@ -84,14 +93,20 @@ public class DemoDataSeeder implements ApplicationRunner {
 		products.add(createProduct("Orange", "Nagpur", "Fruits", "Orange", "50.00", "80.00", 45, 12, today.plusDays(8)));
 		products.add(createProduct("Pomegranate", "Kashmiri", "Fruits", "Pomegranate", "110.00", "165.00", 35, 10, today.plusDays(12)));
 
-		// 3. Dairy: Milk 1L, Curd 400g, Butter 100g pairs
-		// Milk 1L pair (Amul vs Milky Mist)
-		products.add(createProduct("Taaza Milk 1L", "Amul", "Dairy", "Milk 1L", "50.00", "64.00", 40, 10, today.plusDays(2)));
-		products.add(createProduct("Fresh Milk 1L", "Milky Mist", "Dairy", "Milk 1L", "52.00", "62.00", 30, 10, today.plusDays(3)));
-		// Curd 400g pair (Amul vs Milky Mist)
-		products.add(createProduct("Masti Dahi 400g", "Amul", "Dairy", "Curd 400g", "30.00", "40.00", 25, 8, today.minusDays(1)));
-		products.add(createProduct("Classic Curd 400g", "Milky Mist", "Dairy", "Curd 400g", "32.00", "45.00", 20, 8, today.plusDays(5)));
-		// Butter 100g pair (Amul vs Nandini)
+		// 3. Dairy: Milk 1L, Curd 400g pairs with different profit on same sales
+		// Milk 1L pair (Amul cost 50 vs Milky Mist cost 46, both sell at 64)
+		Product amulMilk = createProduct("Taaza Milk 1L", "Amul", "Dairy", "Milk 1L", "50.00", "64.00", 40, 10, today.plusDays(2));
+		Product milkyMilk = createProduct("Fresh Milk 1L", "Milky Mist", "Dairy", "Milk 1L", "46.00", "64.00", 30, 10, today.plusDays(3));
+		products.add(amulMilk);
+		products.add(milkyMilk);
+
+		// Curd 400g pair (Amul cost 30 vs Milky Mist cost 26, both sell at 40)
+		Product amulCurd = createProduct("Masti Dahi 400g", "Amul", "Dairy", "Curd 400g", "30.00", "40.00", 25, 8, today.plusDays(1));
+		Product milkyCurd = createProduct("Classic Curd 400g", "Milky Mist", "Dairy", "Curd 400g", "26.00", "40.00", 20, 8, today.plusDays(5));
+		products.add(amulCurd);
+		products.add(milkyCurd);
+
+		// Butter 100g pair
 		products.add(createProduct("Pasteurized Butter 100g", "Amul", "Dairy", "Butter 100g", "42.00", "56.00", 35, 12, today.plusDays(25)));
 		products.add(createProduct("Delicious Butter 100g", "Nandini", "Dairy", "Butter 100g", "40.00", "52.00", 30, 12, today.plusDays(20)));
 
@@ -123,11 +138,11 @@ public class DemoDataSeeder implements ApplicationRunner {
 		products.add(createProduct("Mixed Fruit Juice", "Real", "Beverages", "Fruit Juice", "85.00", "120.00", 40, 12, today.plusDays(45)));
 		products.add(createProduct("Mango Drink", "Frooti", "Beverages", "Fruit Juice", "30.00", "42.00", 80, 20, today.plusDays(60)));
 
-		// 8. Personal Care (5)
-		products.add(createProduct("Original Soap", "Dettol", "Personal Care", "Bath Soap", "32.00", "45.00", 90, 25, null));
-		products.add(createProduct("Beauty Bathing Bar", "Dove", "Personal Care", "Bath Soap", "48.00", "68.00", 70, 20, null));
-		products.add(createProduct("Strong Teeth Toothpaste", "Colgate", "Personal Care", "Toothpaste", "75.00", "105.00", 80, 20, null));
-		products.add(createProduct("Pure Coconut Oil", "Parachute", "Personal Care", "Hair Oil", "80.00", "115.00", 65, 15, null));
+		// 8. Personal Care: Soap 100g trio (Lux, Dettol, Pears) + single brand type (Pure Coconut Oil 200ml)
+		products.add(createProduct("Velvet Touch Soap 100g", "Lux", "Personal Care", "Soap 100g", "24.00", "36.00", 80, 20, null));
+		products.add(createProduct("Original Bath Soap 100g", "Dettol", "Personal Care", "Soap 100g", "28.00", "40.00", 90, 25, null));
+		products.add(createProduct("Pure & Gentle Soap 100g", "Pears", "Personal Care", "Soap 100g", "35.00", "55.00", 60, 15, null));
+		products.add(createProduct("Pure Coconut Oil 200ml", "Parachute", "Personal Care", "Coconut Oil 200ml", "80.00", "115.00", 65, 15, null));
 		products.add(createProduct("Anti-Dandruff Shampoo", "Head & Shoulders", "Personal Care", "Shampoo", "140.00", "199.00", 50, 15, null));
 
 		products = productRepository.saveAll(products);
@@ -140,7 +155,7 @@ public class DemoDataSeeder implements ApplicationRunner {
 				.findFirst()
 				.orElse(1L);
 
-		// Generate 30 days of realistic COMPLETED bills
+		// Generate 36 days of realistic COMPLETED bills (>= 35 days for demand forecast and weekday factors)
 		Random random = new Random(42);
 		List<Product> vegetableProducts = products.stream()
 				.filter(p -> "Vegetables".equals(p.getCategory()))
@@ -149,7 +164,13 @@ public class DemoDataSeeder implements ApplicationRunner {
 				.filter(p -> !"Vegetables".equals(p.getCategory()) && p.getSellingPrice() != null)
 				.collect(java.util.stream.Collectors.toList());
 
-		for (int daysAgo = 30; daysAgo >= 0; daysAgo--) {
+		// Lookup paired products
+		Product amulM = products.stream().filter(p -> "Taaza Milk 1L".equals(p.getName())).findFirst().orElse(null);
+		Product milkyM = products.stream().filter(p -> "Fresh Milk 1L".equals(p.getName())).findFirst().orElse(null);
+		Product amulC = products.stream().filter(p -> "Masti Dahi 400g".equals(p.getName())).findFirst().orElse(null);
+		Product milkyC = products.stream().filter(p -> "Classic Curd 400g".equals(p.getName())).findFirst().orElse(null);
+
+		for (int daysAgo = 36; daysAgo >= 0; daysAgo--) {
 			LocalDate billDate = today.minusDays(daysAgo);
 			boolean isWeekend = billDate.getDayOfWeek() == DayOfWeek.SATURDAY || billDate.getDayOfWeek() == DayOfWeek.SUNDAY;
 			int billCount = isWeekend ? (4 + random.nextInt(3)) : (2 + random.nextInt(3));
@@ -179,7 +200,6 @@ public class DemoDataSeeder implements ApplicationRunner {
 						prod = otherProducts.get(random.nextInt(otherProducts.size()));
 					}
 
-					// Skip 0 stock products for realistic historical items
 					int qty = 1 + random.nextInt(isWeekend && "Vegetables".equals(prod.getCategory()) ? 4 : 2);
 					BigDecimal basePrice = prod.getSellingPrice();
 					BigDecimal lineOriginal = basePrice.multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP);
@@ -198,6 +218,24 @@ public class DemoDataSeeder implements ApplicationRunner {
 					item.setDiscountReason(null);
 					item.setBelowCost(false);
 					billItemRepository.save(item);
+				}
+
+				// Once per day, add equal paired sales for Milk 1L and Curd 400g
+				if (b == 0) {
+					if (amulM != null && milkyM != null) {
+						int pairQty = 2 + (isWeekend ? 1 : 0);
+						subtotal = addPairBillItem(bill, amulM, pairQty, subtotal);
+						totalCharged = totalCharged.add(amulM.getSellingPrice().multiply(BigDecimal.valueOf(pairQty)));
+						subtotal = addPairBillItem(bill, milkyM, pairQty, subtotal);
+						totalCharged = totalCharged.add(milkyM.getSellingPrice().multiply(BigDecimal.valueOf(pairQty)));
+					}
+					if (amulC != null && milkyC != null) {
+						int pairQty = 2;
+						subtotal = addPairBillItem(bill, amulC, pairQty, subtotal);
+						totalCharged = totalCharged.add(amulC.getSellingPrice().multiply(BigDecimal.valueOf(pairQty)));
+						subtotal = addPairBillItem(bill, milkyC, pairQty, subtotal);
+						totalCharged = totalCharged.add(milkyC.getSellingPrice().multiply(BigDecimal.valueOf(pairQty)));
+					}
 				}
 
 				bill.setSubtotal(subtotal);
@@ -232,7 +270,23 @@ public class DemoDataSeeder implements ApplicationRunner {
 			billItemRepository.save(item);
 		}
 
-		log.info("DemoDataSeeder completed successfully: 40 products and realistic bill history seeded.");
+		log.info("DemoDataSeeder completed successfully: products and 36 days of realistic bill history seeded.");
+	}
+
+	private BigDecimal addPairBillItem(Bill bill, Product prod, int qty, BigDecimal subtotal) {
+		BigDecimal basePrice = prod.getSellingPrice();
+		BigDecimal lineOriginal = basePrice.multiply(BigDecimal.valueOf(qty)).setScale(2, RoundingMode.HALF_UP);
+		BillItem item = new BillItem();
+		item.setBillId(bill.getId());
+		item.setProductId(prod.getId());
+		item.setQuantity(qty);
+		item.setPrice(basePrice);
+		item.setOriginalPrice(basePrice);
+		item.setDiscountPercent(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+		item.setDiscountReason(null);
+		item.setBelowCost(false);
+		billItemRepository.save(item);
+		return subtotal.add(lineOriginal);
 	}
 
 	private Product createProduct(String name, String brand, String category, String productType,

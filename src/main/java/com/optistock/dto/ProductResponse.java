@@ -23,12 +23,13 @@ public class ProductResponse {
 	private long daysLeft;
 	private ExpiryStatus expiryStatus;
 	private Integer onOrderQuantity;
+	private Integer suggestedReorderQty;
 
 	public ProductResponse(Long id, String name, String brand, String category, BigDecimal costPrice,
 			BigDecimal sellingPrice, Integer stockQuantity, Integer reorderThreshold, LocalDate expiryDate,
 			BigDecimal effectivePrice, BigDecimal discountPercent, long daysLeft, ExpiryStatus expiryStatus) {
 		this(id, name, brand, category, category, costPrice, sellingPrice, stockQuantity, reorderThreshold, expiryDate,
-				effectivePrice, discountPercent, daysLeft, expiryStatus, 0);
+				effectivePrice, discountPercent, daysLeft, expiryStatus, 0, 0);
 	}
 
 	public ProductResponse(Long id, String name, String brand, String category, BigDecimal costPrice,
@@ -36,13 +37,21 @@ public class ProductResponse {
 			BigDecimal effectivePrice, BigDecimal discountPercent, long daysLeft, ExpiryStatus expiryStatus,
 			Integer onOrderQuantity) {
 		this(id, name, brand, category, category, costPrice, sellingPrice, stockQuantity, reorderThreshold, expiryDate,
-				effectivePrice, discountPercent, daysLeft, expiryStatus, onOrderQuantity);
+				effectivePrice, discountPercent, daysLeft, expiryStatus, onOrderQuantity, 0);
 	}
 
 	public ProductResponse(Long id, String name, String brand, String category, String productType, BigDecimal costPrice,
 			BigDecimal sellingPrice, Integer stockQuantity, Integer reorderThreshold, LocalDate expiryDate,
 			BigDecimal effectivePrice, BigDecimal discountPercent, long daysLeft, ExpiryStatus expiryStatus,
 			Integer onOrderQuantity) {
+		this(id, name, brand, category, productType, costPrice, sellingPrice, stockQuantity, reorderThreshold, expiryDate,
+				effectivePrice, discountPercent, daysLeft, expiryStatus, onOrderQuantity, 0);
+	}
+
+	public ProductResponse(Long id, String name, String brand, String category, String productType, BigDecimal costPrice,
+			BigDecimal sellingPrice, Integer stockQuantity, Integer reorderThreshold, LocalDate expiryDate,
+			BigDecimal effectivePrice, BigDecimal discountPercent, long daysLeft, ExpiryStatus expiryStatus,
+			Integer onOrderQuantity, Integer suggestedReorderQty) {
 		this.id = id;
 		this.name = name;
 		this.brand = brand;
@@ -59,6 +68,7 @@ public class ProductResponse {
 		this.daysLeft = daysLeft;
 		this.expiryStatus = expiryStatus;
 		this.onOrderQuantity = onOrderQuantity != null ? onOrderQuantity : 0;
+		this.suggestedReorderQty = suggestedReorderQty != null ? suggestedReorderQty : 0;
 	}
 
 	public String getProductType() {
@@ -123,5 +133,13 @@ public class ProductResponse {
 
 	public ExpiryStatus getExpiryStatus() {
 		return expiryStatus;
+	}
+
+	public Integer getSuggestedReorderQty() {
+		return suggestedReorderQty != null ? suggestedReorderQty : 0;
+	}
+
+	public Integer getSuggestedQuantity() {
+		return getSuggestedReorderQty();
 	}
 }

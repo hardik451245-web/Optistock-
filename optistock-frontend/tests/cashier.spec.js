@@ -194,7 +194,7 @@ test.describe('Cashier Dashboard Control & Hit-Testing Tests', () => {
     expect(await receiptModal.isVisible()).toBe(true);
 
     // Close receipt
-    await page.click('button:has-text("+ Start New Bill")');
+    await page.click('#new-bill-btn');
     await page.waitForTimeout(1000);
 
     // Confirm shelf stock dropped

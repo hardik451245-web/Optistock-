@@ -89,4 +89,14 @@ public class ParetoResponse {
 	public void setSmartRecommendation(String smartRecommendation) {
 		this.smartRecommendation = smartRecommendation;
 	}
+
+	private BigDecimal totalRevenue;
+
+	public BigDecimal getTotalRevenue() {
+		return totalRevenue;
+	}
+
+	public void setTotalRevenue(BigDecimal totalRevenue) {
+		this.totalRevenue = totalRevenue;
+	}
 }

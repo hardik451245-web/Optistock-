@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -59,6 +60,21 @@ public class ManagerController {
 	public ResponseEntity<List<ProductMixResponse>> getProductMix(
 			@RequestParam(defaultValue = "30") int days) {
 		return ResponseEntity.ok(managerService.getProductMix(days));
+	}
+
+	@GetMapping("/demand-forecast")
+	public ResponseEntity<com.optistock.dto.DemandForecastResponse> getDemandForecast(
+			@RequestParam(defaultValue = "30") int days,
+			@RequestParam(required = false) String category,
+			@RequestParam(required = false) String productType) {
+		return ResponseEntity.ok(managerService.getDemandForecast(days, category, productType));
+	}
+
+	@GetMapping("/demand-forecast/{productId}")
+	public ResponseEntity<com.optistock.dto.DemandForecastResponse.ProductDemandForecast> getProductDemandForecast(
+			@PathVariable Long productId,
+			@RequestParam(defaultValue = "30") int days) {
+		return ResponseEntity.ok(managerService.getProductDemandForecast(productId, days));
 	}
 
 	@GetMapping("/pareto")

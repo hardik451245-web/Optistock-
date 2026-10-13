@@ -156,7 +156,7 @@ export default function DiscountedProductsSection({ token }) {
 
       {/* 3 Summary Cards */}
       <div className="pareto-stat-grid">
-        <div className="pareto-card card-pink-purple">
+        <div className="pareto-card card-white-elevation">
           <div className="card-top-meta">
             <span className="card-badge-pill">Expiring Soon</span>
             <Clock size={20} className="card-icon" />
@@ -170,7 +170,7 @@ export default function DiscountedProductsSection({ token }) {
           </div>
         </div>
 
-        <div className="pareto-card card-blue-mint">
+        <div className="pareto-card card-white-elevation">
           <div className="card-top-meta">
             <span className="card-badge-pill">Active Offers</span>
             <Tag size={20} className="card-icon" />

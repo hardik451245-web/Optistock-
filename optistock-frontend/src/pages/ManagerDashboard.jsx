@@ -10,9 +10,12 @@ import ProductsTab from '../components/manager/ProductsTab'
 import StockTab from '../components/manager/StockTab'
 import AlertsTab from '../components/manager/AlertsTab'
 import ParetoMixSection from '../components/manager/ParetoMixSection'
+import DemandForecastPage from '../components/manager/DemandForecastPage'
 import DiscountedProductsSection from '../components/manager/DiscountedProductsSection'
 import ReordersSection from '../components/manager/ReordersSection'
 import SalesTab from '../components/manager/SalesTab'
+import NewReorderDialog from '../components/manager/NewReorderDialog'
+import { ReorderProvider } from '../context/ReorderContext'
 import { ArrowLeft, LogOut, User, ShieldCheck } from 'lucide-react'
 
 export default function ManagerDashboard() {
@@ -94,8 +97,9 @@ export default function ManagerDashboard() {
   }
 
   return (
-    <div className="executive-viewport">
-      <div className="executive-frame">
+    <ReorderProvider>
+      <div className="executive-viewport">
+        <div className="executive-frame">
         {/* Left Sidebar (Black Bar with 5 fixed centered icons) */}
         <Sidebar
           activeTab={activeTab}
@@ -132,7 +136,8 @@ export default function ManagerDashboard() {
                   {activeTab === 'products' && 'Product Stock Catalog'}
                   {activeTab === 'stock' && 'Stock Ledger & History'}
                   {activeTab === 'alerts' && 'Stock & Expiry Alerts'}
-                  {activeTab === 'pareto' && '80-20 Mix (Pareto Analysis)'}
+                  {activeTab === 'pareto' && '80-20 Mix: Brand Portfolio Optimization'}
+                  {activeTab === 'forecast' && 'Demand Forecast & Stock-Out Risk'}
                   {activeTab === 'discounted' && 'Discounted & Near-Expiry Products'}
                   {activeTab === 'reorders' && 'Reorders & Purchase Orders'}
                   {activeTab === 'sales' && 'Sales History & Bills'}
@@ -196,6 +201,9 @@ export default function ManagerDashboard() {
               onAddReorderSuggestion={handleAddReorderSuggestion}
             />
           )}
+
+          {/* Demand Forecast Section */}
+          {activeTab === 'forecast' && <DemandForecastPage />}
 
           {/* Discounted Products Section */}
           {activeTab === 'discounted' && (
@@ -297,6 +305,8 @@ export default function ManagerDashboard() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+      <NewReorderDialog />
+    </ReorderProvider>
   )
 }

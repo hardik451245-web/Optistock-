@@ -71,4 +71,10 @@ public interface BillItemRepository extends JpaRepository<BillItem, Long> {
 			"GROUP BY p.id, p.name, p.brand, p.category, p.cost_price " +
 			"ORDER BY profit DESC", nativeQuery = true)
 	List<Object[]> rankingByProfit(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+	@Query(value = "SELECT bi.product_id, DATE(b.created_at) AS sale_date, COALESCE(SUM(bi.quantity), 0) " +
+			"FROM bill_items bi INNER JOIN bills b ON bi.bill_id = b.id " +
+			"WHERE b.created_at >= :from AND b.created_at < :to AND b.status = 'COMPLETED' " +
+			"GROUP BY bi.product_id, DATE(b.created_at)", nativeQuery = true)
+	List<Object[]> dailyUnitsByProductBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

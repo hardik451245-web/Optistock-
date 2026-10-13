@@ -2,15 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   listProducts,
   listPurchaseOrders,
-  createPurchaseOrder,
   receivePurchaseOrder,
   cancelPurchaseOrder,
   adjustStock,
   writeoffStock,
   listStockMovements,
 } from '../../api'
+import { useReorder } from '../../context/ReorderContext'
 
 export default function StockTab({ products = [], onRefreshProducts, targetProductId = null }) {
+  const { openReorder, reorderVersion } = useReorder()
   const [subView, setSubView] = useState('stock') // 'stock' | 'orders' | 'movements'
   const [search, setSearch] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('ALL')
@@ -25,10 +26,6 @@ export default function StockTab({ products = [], onRefreshProducts, targetProdu
   const [success, setSuccess] = useState('')
 
   // Modals state
-  const [reorderModal, setReorderModal] = useState(null) // product
-  const [reorderQty, setReorderQty] = useState(10)
-  const [reorderSupplier, setReorderSupplier] = useState('')
-
   const [adjustModal, setAdjustModal] = useState(null) // product
   const [adjustDelta, setAdjustDelta] = useState(0)
   const [adjustReason, setAdjustReason] = useState('')
@@ -97,27 +94,7 @@ export default function StockTab({ products = [], onRefreshProducts, targetProdu
   })
 
   // Handlers for Stock sub-view
-  async function handleConfirmReorder() {
-    if (!reorderModal || reorderQty <= 0) return
-    setActionLoading(true)
-    setError('')
-    setSuccess('')
-    try {
-      await createPurchaseOrder({
-        productId: reorderModal.id || reorderModal.productId,
-        quantity: Number(reorderQty),
-        supplier: reorderSupplier.trim() || null,
-      })
-      setSuccess(`Purchase order created for ${reorderModal.name} (Qty: ${reorderQty})`)
-      setReorderModal(null)
-      await onRefreshProducts()
-      if (subView === 'orders') await loadOrders()
-    } catch (err) {
-      setError(err.message || 'Failed to create purchase order')
-    } finally {
-      setActionLoading(false)
-    }
-  }
+
 
   async function handleConfirmAdjust() {
     if (!adjustModal || adjustDelta === 0 || !adjustReason.trim()) {
@@ -336,11 +313,13 @@ export default function StockTab({ products = [], onRefreshProducts, targetProdu
                         <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
                           <button
                             type="button"
-                            style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem', borderRadius: '6px', background: '#0d9488', color: '#fff', border: 'none', cursor: 'pointer' }}
+                            style={{ padding: '0.35rem 0.65rem', fontSize: '0.8rem', borderRadius: '6px', background: '#0F172A', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
                             onClick={() => {
-                              setReorderModal(p)
-                              setReorderQty(10)
-                              setReorderSupplier('')
+                              openReorder({
+                                productId: p.id,
+                                product: p,
+                                suggestedQty: Math.max(1, (p.reorderThreshold || 5) * 2 - (p.stockQuantity || 0)),
+                              })
                             }}
                           >
                             Reorder
@@ -622,55 +601,7 @@ export default function StockTab({ products = [], onRefreshProducts, targetProdu
       )}
 
       {/* MODAL 1: REORDER */}
-      {reorderModal && (
-        <div className="modal-overlay" onClick={() => setReorderModal(null)}>
-          <div className="glass-panel modal-content" onClick={(e) => e.stopPropagation()} style={{ width: 'min(450px, 92vw)' }}>
-            <h2 style={{ fontSize: '1.25rem', marginTop: 0 }}>Create Purchase Order</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-              Ordering stock for <strong>{reorderModal.name}</strong> (Current stock: {reorderModal.stockQuantity})
-            </p>
-            <div style={{ marginTop: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 4 }}>Order Quantity</label>
-              <input
-                type="number"
-                min="1"
-                className="glass-input"
-                style={{ borderRadius: '6px' }}
-                value={reorderQty}
-                onChange={(e) => setReorderQty(e.target.value)}
-              />
-            </div>
-            <div style={{ marginTop: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: 4 }}>Supplier (optional)</label>
-              <input
-                type="text"
-                placeholder="Supplier name"
-                className="glass-input"
-                style={{ borderRadius: '6px' }}
-                value={reorderSupplier}
-                onChange={(e) => setReorderSupplier(e.target.value)}
-              />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
-              <button
-                type="button"
-                style={{ padding: '0.5rem 1rem', borderRadius: '6px', background: 'rgba(255,255,255,0.1)', color: '#fff', border: 'none', cursor: 'pointer' }}
-                onClick={() => setReorderModal(null)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                style={{ padding: '0.5rem 1rem', borderRadius: '6px', background: '#0d9488', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 600 }}
-                disabled={actionLoading}
-                onClick={handleConfirmReorder}
-              >
-                {actionLoading ? 'Ordering...' : 'Confirm Order'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* MODAL 2: ADJUST */}
       {adjustModal && (

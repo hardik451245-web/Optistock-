@@ -19,12 +19,14 @@ import {
   Building,
   Check,
 } from 'lucide-react'
+import { useReorder } from '../../context/ReorderContext'
 
 export default function ReordersSection({
   token,
   initialSuggestion,
   onClearInitialSuggestion,
 }) {
+  const { openReorder, reorderVersion } = useReorder()
   const [activeTab, setActiveTab] = useState('pending') // 'pending' | 'transit' | 'history' | 'suppliers'
   const [orders, setOrders] = useState([])
   const [suppliers, setSuppliers] = useState([])
@@ -65,7 +67,7 @@ export default function ReordersSection({
     fetchOrders()
     fetchSuppliers()
     fetchProducts()
-  }, [])
+  }, [reorderVersion])
 
   useEffect(() => {
     if (initialSuggestion) {
@@ -319,7 +321,7 @@ export default function ReordersSection({
   }
 
   // Counts for summary
-  const pendingOrders = orders.filter((o) => o.status === 'SUGGESTED')
+  const pendingOrders = orders.filter((o) => o.status === 'SUGGESTED' || o.status === 'PENDING')
   const transitOrders = orders.filter((o) => o.status === 'APPROVED' || o.status === 'ORDERED')
   const receivedOrders = orders.filter((o) => o.status === 'RECEIVED')
 
@@ -338,10 +340,7 @@ export default function ReordersSection({
           <button
             type="button"
             className="btn-new-reorder-primary"
-            onClick={() => {
-              resetForm()
-              setIsFormOpen(true)
-            }}
+            onClick={() => openReorder({})}
           >
             <Plus size={18} />
             <span>New Reorder</span>
@@ -358,7 +357,7 @@ export default function ReordersSection({
 
       {/* 3 Summary Cards */}
       <div className="pareto-stat-grid">
-        <div className="pareto-card card-pink-purple">
+        <div className="pareto-card card-white-elevation">
           <div className="card-top-meta">
             <span className="card-badge-pill">Pending</span>
             <Clock size={20} className="card-icon" />
@@ -368,7 +367,7 @@ export default function ReordersSection({
           <div className="card-delta-sub">Suggested by low-stock & 80-20 alerts</div>
         </div>
 
-        <div className="pareto-card card-blue-mint">
+        <div className="pareto-card card-white-elevation">
           <div className="card-top-meta">
             <span className="card-badge-pill">In Transit</span>
             <Truck size={20} className="card-icon" />

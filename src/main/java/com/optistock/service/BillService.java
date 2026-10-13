@@ -47,12 +47,13 @@ public class BillService {
 	private final DiscountProperties discountProperties;
 	private final DiscountRequestRepository discountRequestRepository;
 	private final StockMovementRepository stockMovementRepository;
+	private final java.time.Clock clock;
 
 	@org.springframework.beans.factory.annotation.Autowired
 	public BillService(BillRepository billRepository, BillItemRepository billItemRepository,
 			ProductRepository productRepository, ExpiryPricingService expiryPricingService,
 			DiscountProperties discountProperties, DiscountRequestRepository discountRequestRepository,
-			StockMovementRepository stockMovementRepository) {
+			StockMovementRepository stockMovementRepository, java.time.Clock clock) {
 		this.billRepository = billRepository;
 		this.billItemRepository = billItemRepository;
 		this.productRepository = productRepository;
@@ -60,13 +61,22 @@ public class BillService {
 		this.discountProperties = discountProperties;
 		this.discountRequestRepository = discountRequestRepository;
 		this.stockMovementRepository = stockMovementRepository;
+		this.clock = clock != null ? clock : java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata"));
+	}
+
+	public BillService(BillRepository billRepository, BillItemRepository billItemRepository,
+			ProductRepository productRepository, ExpiryPricingService expiryPricingService,
+			DiscountProperties discountProperties, DiscountRequestRepository discountRequestRepository,
+			StockMovementRepository stockMovementRepository) {
+		this(billRepository, billItemRepository, productRepository, expiryPricingService,
+				discountProperties, discountRequestRepository, stockMovementRepository, java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata")));
 	}
 
 	public BillService(BillRepository billRepository, BillItemRepository billItemRepository,
 			ProductRepository productRepository, ExpiryPricingService expiryPricingService,
 			DiscountProperties discountProperties, DiscountRequestRepository discountRequestRepository) {
 		this(billRepository, billItemRepository, productRepository, expiryPricingService,
-				discountProperties, discountRequestRepository, null);
+				discountProperties, discountRequestRepository, null, java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata")));
 	}
 
 	@Transactional
@@ -75,7 +85,7 @@ public class BillService {
 			throw new IllegalArgumentException("Bill must contain at least one item");
 		}
 
-		LocalDate today = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+		LocalDate today = LocalDate.now(clock);
 
 		Bill bill = new Bill();
 		bill.setCashierId(cashierId);
@@ -267,7 +277,7 @@ public class BillService {
 	@Transactional(readOnly = true)
 	public List<BillResponse> getBills(LocalDate date, Long cashierId, boolean isManager) {
 		if (date == null) {
-			date = LocalDate.now(ZoneId.of("Asia/Kolkata"));
+			date = LocalDate.now(clock);
 		}
 		LocalDateTime from = date.atStartOfDay();
 		LocalDateTime to = date.plusDays(1).atStartOfDay();

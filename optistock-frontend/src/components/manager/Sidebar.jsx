@@ -4,6 +4,7 @@ import {
   PieChart,
   Percent,
   Truck,
+  TrendingUp,
   Settings,
 } from 'lucide-react'
 
@@ -18,6 +19,7 @@ export default function Sidebar({
   const isParetoActive = activeTab === 'pareto'
   const isDiscountedActive = activeTab === 'discounted'
   const isReordersActive = activeTab === 'reorders'
+  const isForecastActive = activeTab === 'forecast'
 
   return (
     <aside className="executive-sidebar">
@@ -43,7 +45,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Middle: Exactly 5 fixed icon buttons vertically centered */}
+      {/* Middle: Icon buttons vertically aligned */}
       <div className="sidebar-nav-group">
         {/* 1. Product Stock (Box) */}
         <button
@@ -76,7 +78,17 @@ export default function Sidebar({
           <PieChart size={22} strokeWidth={1.8} />
         </button>
 
-        {/* 4. Discounted Products (Percent Tag) */}
+        {/* 4. Demand Forecast (TrendingUp) */}
+        <button
+          type="button"
+          className={`sidebar-icon-btn ${isForecastActive ? 'active' : ''}`}
+          data-tooltip="Demand Forecast"
+          onClick={() => setActiveTab('forecast')}
+        >
+          <TrendingUp size={22} strokeWidth={1.8} />
+        </button>
+
+        {/* 5. Discounted Products (Percent Tag) */}
         <button
           type="button"
           className={`sidebar-icon-btn ${isDiscountedActive ? 'active' : ''}`}
@@ -86,7 +98,7 @@ export default function Sidebar({
           <Percent size={22} strokeWidth={1.8} />
         </button>
 
-        {/* 5. Reorders & Orders (Truck) */}
+        {/* 6. Reorders & Orders (Truck) */}
         <button
           type="button"
           className={`sidebar-icon-btn ${isReordersActive ? 'active' : ''}`}

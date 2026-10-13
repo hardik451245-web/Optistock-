@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class OptistockBackendApplication {
 
 	public static void main(String[] args) {
+		java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone(java.time.ZoneId.of("Asia/Kolkata")));
 		SpringApplication.run(OptistockBackendApplication.class, args);
 	}
 
