@@ -31,7 +31,6 @@ import com.optistock.repository.ProductRepository;
 import com.optistock.repository.UserRepository;
 
 @Component
-@Profile("demo")
 @Order(2)
 public class DemoDataSeeder implements ApplicationRunner {
 

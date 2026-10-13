@@ -54,6 +54,7 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.POST, "/api/users/register").permitAll()
 						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 						.requestMatchers("/error").permitAll()
+						.requestMatchers("/health").permitAll()
 						.requestMatchers("/api/manager/**").hasRole("MANAGER")
 						.requestMatchers("/api/purchase-orders/**").hasRole("MANAGER")
 						.requestMatchers("/api/stock/**").hasRole("MANAGER")
