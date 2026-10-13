@@ -2,14 +2,16 @@
 target/
 build/
 dist/
-optistock-frontend/dist/
+**/target/
+**/build/
+**/dist/
 *.class
 *.jar
 *.war
 
 # Node & Frontend Dependencies
 node_modules/
-optistock-frontend/node_modules/
+**/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -52,9 +54,11 @@ logs/
 
 # Testing & Reports
 test-results/
+**/test-results/
 playwright-report/
+**/playwright-report/
 blob-report/
-playwright/.cache/
+**/playwright/.cache/
 
 # OS Metadata
 desktop.ini
@@ -67,3 +71,11 @@ ehthumbs.db
 .agents/
 .gemini/
 .gsd/
+adapters/
+scripts/
+docs/
+check-extensions.ps1
+GSD-STYLE.md
+PROJECT_RULES.md
+VERSION
+model_capabilities.yaml

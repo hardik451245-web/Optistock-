@@ -14,6 +14,46 @@ Retail grocery and convenience stores encounter severe operational profit leaks 
 
 ---
 
+## Repository Structure
+
+All backend and frontend application source code is consolidated inside the single main **`OptiStock`** directory:
+
+```
+optistock/
+├── OptiStock/                         # Main project folder
+│   ├── optistock-backend/             # Spring Boot 3.3.4 (Java 17+) backend
+│   │   ├── src/
+│   │   │   ├── main/java/com/optistock/
+│   │   │   │   ├── config/            # Clock, Security, and DemoDataSeeder
+│   │   │   │   ├── controller/        # REST endpoints (Manager, Bill, Stock, etc.)
+│   │   │   │   ├── dto/               # Request & response data transfer objects
+│   │   │   │   ├── entity/            # JPA entities (Product, Bill, PurchaseOrder, etc.)
+│   │   │   │   ├── repository/        # Spring Data JPA repositories
+│   │   │   │   └── service/           # Business logic & forecasting algorithms
+│   │   │   └── main/resources/        # Application properties & configs
+│   │   ├── pom.xml                    # Maven build file
+│   │   └── .env.example               # Backend environment variables template
+│   │
+│   ├── optistock-frontend/            # React 19 + Vite frontend
+│   │   ├── src/
+│   │   │   ├── components/            # Cashier and Manager UI components
+│   │   │   │   ├── cashier/           # Cashier billing, cart, and receipt modals
+│   │   │   │   └── manager/           # Executive dashboard, alerts, forecast, ledger
+│   │   │   ├── context/               # Global state (ReorderContext, Auth)
+│   │   │   ├── pages/                 # ManagerDashboard and CashierDashboard views
+│   │   │   └── styles/                # CSS design system and tokens
+│   │   ├── tests/                     # Playwright E2E test suites (manager & cashier)
+│   │   ├── package.json
+│   │   └── vite.config.js
+│   └── README.md
+├── .env.example                       # Root environment configuration template
+├── .gitignore                         # Comprehensive ignore rules
+├── LICENSE                            # MIT License
+└── README.md                          # Documentation
+```
+
+---
+
 ## Screenshots
 
 > *Add application screenshots and demo captures below:*
@@ -89,48 +129,12 @@ Retail grocery and convenience stores encounter severe operational profit leaks 
 
 ---
 
-## Repository Structure
-
-```
-optistock/
-├── .github/                       # GitHub workflows and CI configurations
-├── optistock-frontend/            # React 19 + Vite frontend
-│   ├── src/
-│   │   ├── components/            # Cashier and Manager UI components
-│   │   │   ├── cashier/           # Cashier billing, cart, and receipt modals
-│   │   │   └── manager/           # Executive dashboard, alerts, forecast, ledger
-│   │   ├── context/               # Global state (ReorderContext, Auth)
-│   │   ├── pages/                 # ManagerDashboard and CashierDashboard views
-│   │   └── styles/                # CSS design system and tokens
-│   ├── tests/                     # Playwright E2E test suites (manager & cashier)
-│   ├── package.json
-│   └── vite.config.js
-├── src/                           # Spring Boot backend
-│   ├── main/
-│   │   ├── java/com/optistock/
-│   │   │   ├── config/            # Clock, Security, and DemoDataSeeder
-│   │   │   ├── controller/        # REST controllers (Manager, Bill, Stock, etc.)
-│   │   │   ├── dto/               # Request & response data transfer objects
-│   │   │   ├── entity/            # JPA entities (Product, Bill, PurchaseOrder, etc.)
-│   │   │   ├── repository/        # Spring Data JPA repositories
-│   │   │   └── service/           # Business logic & forecast algorithms
-│   │   └── resources/             # Application properties & SQL configs
-│   └── test/                      # Comprehensive JUnit & Mockito test suite
-├── .env.example                   # Environment configuration template
-├── .gitignore                     # Git ignore rules for Java, Node, IDEs, and DBs
-├── LICENSE                        # MIT License
-├── pom.xml                        # Maven project descriptor
-└── README.md                      # Documentation
-```
-
----
-
 ## Getting Started
 
 ### Prerequisites
 - **Java Development Kit (JDK):** Version 17 or higher
 - **Node.js:** Version 18 or higher (with npm)
-- **Maven:** Version 3.8+ (or use included wrapper if available)
+- **Maven:** Version 3.8+
 - *(Optional for Production)*: **MySQL Server 8.0+**
 
 ---
@@ -141,15 +145,15 @@ OptiStock includes a standalone zero-config demo mode pre-seeded with 40+ produc
 
 #### 1. Start the Backend Server
 ```bash
-# In the project root directory:
+cd OptiStock/optistock-backend
 mvn spring-boot:run "-Dspring-boot.run.profiles=demo"
 ```
 The Spring Boot backend will start on `http://localhost:8080`.
 
 #### 2. Start the Frontend Application
 ```bash
-# Open a new terminal in the project root:
-cd optistock-frontend
+# In a separate terminal:
+cd OptiStock/optistock-frontend
 npm install
 npm run dev
 ```
@@ -185,11 +189,12 @@ Open `http://localhost:5173` in your browser.
    ```
 4. Run the production backend:
    ```bash
+   cd OptiStock/optistock-backend
    mvn clean spring-boot:run
    ```
 5. Build the frontend for production:
    ```bash
-   cd optistock-frontend
+   cd OptiStock/optistock-frontend
    npm run build
    ```
 
@@ -199,13 +204,14 @@ Open `http://localhost:5173` in your browser.
 
 ### Backend Unit & Integration Tests (JUnit 5)
 ```bash
+cd OptiStock/optistock-backend
 mvn test
 ```
 *Executes all 38 test suites across billing, markdown rules, demand forecasting, stock movements, and clock consistency.*
 
 ### Frontend End-to-End Tests (Playwright)
 ```bash
-cd optistock-frontend
+cd OptiStock/optistock-frontend
 npx playwright test
 ```
 *Validates full manager and cashier interactive user journeys, hit-testing, and state persistence.*
