@@ -4,6 +4,10 @@
   "outputDirectory": "OptiStock/optistock-frontend/dist",
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "/api/[...path]"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
