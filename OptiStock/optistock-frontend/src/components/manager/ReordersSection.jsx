@@ -70,6 +70,16 @@ export default function ReordersSection({
   }, [reorderVersion])
 
   useEffect(() => {
+    const handleOpenPreview = (e) => {
+      if (e?.detail) {
+        setPoPreviewOrder(e.detail)
+      }
+    }
+    window.addEventListener('optistock:open-po-preview', handleOpenPreview)
+    return () => window.removeEventListener('optistock:open-po-preview', handleOpenPreview)
+  }, [])
+
+  useEffect(() => {
     if (initialSuggestion) {
       // Auto open reorder form pre-filled
       setIsFormOpen(true)
@@ -141,9 +151,15 @@ export default function ReordersSection({
   // Action handlers
   async function handleApprove(orderId) {
     try {
+      const order = orders.find((o) => o.id === orderId)
       const res = await fetch(`/api/purchase-orders/${orderId}/approve`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}`, 'X-Auth-Token': token },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'X-Auth-Token': token,
+        },
+        body: JSON.stringify({ supplierId: order?.supplierId || null }),
       })
       if (!res.ok) throw new Error('Failed to approve order')
       const updated = await res.json()
@@ -224,12 +240,14 @@ export default function ReordersSection({
     const payload = {
       productId: formProduct.id,
       quantity: qty,
-      supplier: supplierObj?.name || formProduct.supplierName || 'General Supplier',
-      supplierId: supplierObj?.id || null,
+      supplierId: supplierObj ? Number(supplierObj.id) : null,
+      supplier: supplierObj?.name || (formSupplierId ? '' : (formProduct.supplierName || null)),
+      supplierName: supplierObj?.name || (formSupplierId ? '' : (formProduct.supplierName || null)),
       supplierPhone: supplierObj?.phone || '',
-      supplierWhatsapp: supplierObj?.whatsappNumber || '',
+      supplierWhatsapp: supplierObj?.whatsappNumber || supplierObj?.phone || '',
       supplierEmail: supplierObj?.email || '',
       unitCost: unitCost,
+      unitCostPrice: unitCost,
       totalCost: totalCost,
       expectedDeliveryDate: formExpectedDate || null,
       notes: formNotes || '',
@@ -470,7 +488,12 @@ export default function ReordersSection({
                           </div>
                         </td>
                         <td className="text-bold">{order.quantity} units</td>
-                        <td>{order.supplier || 'General Supplier'}</td>
+                        <td>
+                          {(() => {
+                            const s = suppliers.find((sup) => (order.supplierId && String(sup.id) === String(order.supplierId)) || sup.name === order.supplier)
+                            return s?.name || order.supplier || 'General Supplier'
+                          })()}
+                        </td>
                         <td>₹{order.unitCost ? Number(order.unitCost).toFixed(2) : '-'}</td>
                         <td className="text-bold">₹{order.totalCost ? Number(order.totalCost).toLocaleString('en-IN') : '-'}</td>
                         <td>
@@ -552,7 +575,12 @@ export default function ReordersSection({
                           </div>
                         </td>
                         <td className="text-bold">{order.quantity} units</td>
-                        <td>{order.supplier}</td>
+                        <td>
+                          {(() => {
+                            const s = suppliers.find((sup) => (order.supplierId && String(sup.id) === String(order.supplierId)) || sup.name === order.supplier)
+                            return s?.name || order.supplier || '-'
+                          })()}
+                        </td>
                         <td>{order.orderedAt ? new Date(order.orderedAt).toLocaleDateString() : '-'}</td>
                         <td>{order.expectedDeliveryDate || 'Prompt'}</td>
                         <td>
@@ -960,137 +988,161 @@ export default function ReordersSection({
             </div>
 
             {/* Printable / Document Body */}
-            <div className="po-document-sheet" id="printable-po">
-              <div className="po-sheet-top">
-                <div>
-                  <h4 className="po-sheet-heading">PURCHASE ORDER</h4>
-                  <div className="po-sheet-number">{poPreviewOrder.poNumber || `PO-${poPreviewOrder.id}`}</div>
-                  <div className="po-sheet-date">
-                    Date: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            {(() => {
+              const activeSup = suppliers.find(
+                (s) => (poPreviewOrder?.supplierId && String(s.id) === String(poPreviewOrder.supplierId)) ||
+                       (poPreviewOrder?.supplier && s.name && s.name.toLowerCase() === poPreviewOrder.supplier.toLowerCase())
+              )
+
+              return (
+                <>
+                  <div className="po-document-sheet" id="printable-po">
+                    <div className="po-sheet-top">
+                      <div>
+                        <h4 className="po-sheet-heading">PURCHASE ORDER</h4>
+                        <div className="po-sheet-number">{poPreviewOrder.poNumber || `PO-${poPreviewOrder.id}`}</div>
+                        <div className="po-sheet-date">
+                          Date: {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </div>
+                      </div>
+
+                      <div className="po-supplier-block">
+                        <div className="po-block-title">Vendor / Supplier:</div>
+                        <div className="po-supplier-name">{activeSup?.name || poPreviewOrder.supplier || 'Wholesale Supplier'}</div>
+                        {(activeSup?.phone || poPreviewOrder.supplierPhone) && (
+                          <div>Phone: {activeSup?.phone || poPreviewOrder.supplierPhone}</div>
+                        )}
+                        {(activeSup?.email || poPreviewOrder.supplierEmail) && (
+                          <div>Email: {activeSup?.email || poPreviewOrder.supplierEmail}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Items Table */}
+                    <table className="po-items-table">
+                      <thead>
+                        <tr>
+                          <th>Item Description</th>
+                          <th>Qty</th>
+                          <th>Unit Cost (₹)</th>
+                          <th>Line Total (₹)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="text-bold">{poPreviewOrder.productName}</td>
+                          <td>{poPreviewOrder.quantity} units</td>
+                          <td>₹{poPreviewOrder.unitCost ? Number(poPreviewOrder.unitCost).toFixed(2) : '-'}</td>
+                          <td className="text-bold">
+                            ₹{poPreviewOrder.totalCost
+                              ? Number(poPreviewOrder.totalCost).toLocaleString('en-IN')
+                              : (Number(poPreviewOrder.unitCost || 0) * poPreviewOrder.quantity).toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <div className="po-total-row">
+                      <span className="po-total-label">Grand Total:</span>
+                      <span className="po-total-val">
+                        ₹{poPreviewOrder.totalCost
+                          ? Number(poPreviewOrder.totalCost).toLocaleString('en-IN')
+                          : (Number(poPreviewOrder.unitCost || 0) * poPreviewOrder.quantity).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+
+                    {poPreviewOrder.notes && (
+                      <div className="po-notes-block">
+                        <div className="po-notes-label">Order Notes:</div>
+                        <p>{poPreviewOrder.notes}</p>
+                      </div>
+                    )}
+
+                    <div className="po-footer-note">
+                      Generated via OptiStock AI Purchase Management System. Authorized for stock fulfillment.
+                    </div>
                   </div>
-                </div>
 
-                <div className="po-supplier-block">
-                  <div className="po-block-title">Vendor / Supplier:</div>
-                  <div className="po-supplier-name">{poPreviewOrder.supplier || 'Wholesale Supplier'}</div>
-                  {poPreviewOrder.supplierPhone && <div>Phone: {poPreviewOrder.supplierPhone}</div>}
-                  {poPreviewOrder.supplierEmail && <div>Email: {poPreviewOrder.supplierEmail}</div>}
-                </div>
-              </div>
+                  {/* Actions: 3 Send Options */}
+                  <div className="po-preview-actions-bar">
+                    <div className="po-send-buttons-row">
+                      {/* 1. Download PDF / Print */}
+                      <button
+                        type="button"
+                        className="btn-po-action btn-po-print"
+                        onClick={() => window.print()}
+                      >
+                        <Printer size={16} />
+                        <span>Download / Print PDF</span>
+                      </button>
 
-              {/* Items Table */}
-              <table className="po-items-table">
-                <thead>
-                  <tr>
-                    <th>Item Description</th>
-                    <th>Qty</th>
-                    <th>Unit Cost (₹)</th>
-                    <th>Line Total (₹)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="text-bold">{poPreviewOrder.productName}</td>
-                    <td>{poPreviewOrder.quantity} units</td>
-                    <td>₹{poPreviewOrder.unitCost ? Number(poPreviewOrder.unitCost).toFixed(2) : '-'}</td>
-                    <td className="text-bold">
-                      ₹{poPreviewOrder.totalCost
-                        ? Number(poPreviewOrder.totalCost).toLocaleString('en-IN')
-                        : (Number(poPreviewOrder.unitCost || 0) * poPreviewOrder.quantity).toLocaleString('en-IN')}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                      {/* 2. Send via WhatsApp */}
+                      <button
+                        type="button"
+                        className="btn-po-action btn-po-whatsapp"
+                        onClick={() => {
+                          const rawPhone = activeSup?.whatsappNumber || activeSup?.phone || poPreviewOrder.supplierWhatsapp || poPreviewOrder.supplierPhone || ''
+                          const phone = rawPhone.replace(/[^0-9]/g, '')
+                          if (!phone) {
+                            alert('Selected supplier does not have a registered WhatsApp or phone number.')
+                            return
+                          }
+                          const text = encodeURIComponent(
+                            `*PURCHASE ORDER: ${poPreviewOrder.poNumber || `PO-${poPreviewOrder.id}`}*\n` +
+                            `OptiStock AI Store Fulfillment\n\n` +
+                            `*Product:* ${poPreviewOrder.productName}\n` +
+                            `*Quantity:* ${poPreviewOrder.quantity} units\n` +
+                            `*Total:* ₹${poPreviewOrder.totalCost || (Number(poPreviewOrder.unitCost || 0) * poPreviewOrder.quantity)}\n\n` +
+                            `Please confirm delivery date.`
+                          )
+                          window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
+                          handleConfirmSentAndOrdered(poPreviewOrder.id, 'WHATSAPP')
+                        }}
+                      >
+                        <MessageSquare size={16} />
+                        <span>Send via WhatsApp</span>
+                      </button>
 
-              <div className="po-total-row">
-                <span className="po-total-label">Grand Total:</span>
-                <span className="po-total-val">
-                  ₹{poPreviewOrder.totalCost
-                    ? Number(poPreviewOrder.totalCost).toLocaleString('en-IN')
-                    : (Number(poPreviewOrder.unitCost || 0) * poPreviewOrder.quantity).toLocaleString('en-IN')}
-                </span>
-              </div>
+                      {/* 3. Send via Email */}
+                      <button
+                        type="button"
+                        className="btn-po-action btn-po-email"
+                        onClick={() => {
+                          const email = activeSup?.email || poPreviewOrder.supplierEmail || ''
+                          if (!email) {
+                            alert('Selected supplier does not have a registered email address.')
+                            return
+                          }
+                          const subject = encodeURIComponent(`Purchase Order ${poPreviewOrder.poNumber || `PO-${poPreviewOrder.id}`} - OptiStock AI`)
+                          const body = encodeURIComponent(
+                            `Dear Supplier,\n\nPlease find purchase order details below:\n\n` +
+                            `PO Number: ${poPreviewOrder.poNumber || `PO-${poPreviewOrder.id}`}\n` +
+                            `Product: ${poPreviewOrder.productName}\n` +
+                            `Quantity: ${poPreviewOrder.quantity} units\n` +
+                            `Total: ₹${poPreviewOrder.totalCost || (Number(poPreviewOrder.unitCost || 0) * poPreviewOrder.quantity)}\n\n` +
+                            `Best regards,\nOptiStock AI Inventory Team`
+                          )
+                          window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_self')
+                          handleConfirmSentAndOrdered(poPreviewOrder.id, 'EMAIL')
+                        }}
+                      >
+                        <Mail size={16} />
+                        <span>Send via Email</span>
+                      </button>
+                    </div>
 
-              {poPreviewOrder.notes && (
-                <div className="po-notes-block">
-                  <div className="po-notes-label">Order Notes:</div>
-                  <p>{poPreviewOrder.notes}</p>
-                </div>
-              )}
-
-              <div className="po-footer-note">
-                Generated via OptiStock AI Purchase Management System. Authorized for stock fulfillment.
-              </div>
-            </div>
-
-            {/* Actions: 3 Send Options */}
-            <div className="po-preview-actions-bar">
-              <div className="po-send-buttons-row">
-                {/* 1. Download PDF / Print */}
-                <button
-                  type="button"
-                  className="btn-po-action btn-po-print"
-                  onClick={() => window.print()}
-                >
-                  <Printer size={16} />
-                  <span>Download / Print PDF</span>
-                </button>
-
-                {/* 2. Send via WhatsApp */}
-                <button
-                  type="button"
-                  className="btn-po-action btn-po-whatsapp"
-                  onClick={() => {
-                    const phone = (poPreviewOrder.supplierWhatsapp || poPreviewOrder.supplierPhone || '919820112345').replace(/[^0-9]/g, '')
-                    const text = encodeURIComponent(
-                      `*PURCHASE ORDER: ${poPreviewOrder.poNumber || `PO-${poPreviewOrder.id}`}*\n` +
-                      `OptiStock AI Store Fulfillment\n\n` +
-                      `*Product:* ${poPreviewOrder.productName}\n` +
-                      `*Quantity:* ${poPreviewOrder.quantity} units\n` +
-                      `*Total:* ₹${poPreviewOrder.totalCost || (Number(poPreviewOrder.unitCost || 0) * poPreviewOrder.quantity)}\n\n` +
-                      `Please confirm delivery date.`
-                    )
-                    window.open(`https://wa.me/${phone}?text=${text}`, '_blank')
-                    handleConfirmSentAndOrdered(poPreviewOrder.id, 'WHATSAPP')
-                  }}
-                >
-                  <MessageSquare size={16} />
-                  <span>Send via WhatsApp</span>
-                </button>
-
-                {/* 3. Send via Email */}
-                <button
-                  type="button"
-                  className="btn-po-action btn-po-email"
-                  onClick={() => {
-                    const email = poPreviewOrder.supplierEmail || 'orders@supplier.com'
-                    const subject = encodeURIComponent(`Purchase Order ${poPreviewOrder.poNumber || `PO-${poPreviewOrder.id}`} - OptiStock AI`)
-                    const body = encodeURIComponent(
-                      `Dear Supplier,\n\nPlease find purchase order details below:\n\n` +
-                      `PO Number: ${poPreviewOrder.poNumber || `PO-${poPreviewOrder.id}`}\n` +
-                      `Product: ${poPreviewOrder.productName}\n` +
-                      `Quantity: ${poPreviewOrder.quantity} units\n` +
-                      `Total: ₹${poPreviewOrder.totalCost || (Number(poPreviewOrder.unitCost || 0) * poPreviewOrder.quantity)}\n\n` +
-                      `Best regards,\nOptiStock AI Inventory Team`
-                    )
-                    window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_self')
-                    handleConfirmSentAndOrdered(poPreviewOrder.id, 'EMAIL')
-                  }}
-                >
-                  <Mail size={16} />
-                  <span>Send via Email</span>
-                </button>
-              </div>
-
-              <button
-                type="button"
-                className="btn-confirm-ordered"
-                onClick={() => handleConfirmSentAndOrdered(poPreviewOrder.id, 'MANUAL')}
-              >
-                <Check size={16} />
-                <span>Confirm Sent &amp; Mark Ordered</span>
-              </button>
-            </div>
+                    <button
+                      type="button"
+                      className="btn-confirm-ordered"
+                      onClick={() => handleConfirmSentAndOrdered(poPreviewOrder.id, 'MANUAL')}
+                    >
+                      <Check size={16} />
+                      <span>Confirm Sent &amp; Mark Ordered</span>
+                    </button>
+                  </div>
+                </>
+              )
+            })()}
           </div>
         </div>
       )}

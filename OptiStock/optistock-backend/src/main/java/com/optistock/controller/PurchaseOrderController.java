@@ -77,9 +77,12 @@ public class PurchaseOrderController {
 	@PutMapping("/{id}/approve")
 	public ResponseEntity<PurchaseOrderResponse> approveOrder(
 			@PathVariable Long id,
+			@RequestParam(required = false) Long supplierId,
+			@RequestBody(required = false) CreatePurchaseOrderRequest request,
 			Authentication authentication) {
 		String approvedBy = authentication != null ? authentication.getName() : "Manager";
-		return ResponseEntity.ok(purchaseOrderService.approveOrder(id, approvedBy));
+		Long finalSupplierId = request != null && request.getSupplierId() != null ? request.getSupplierId() : supplierId;
+		return ResponseEntity.ok(purchaseOrderService.approveOrder(id, finalSupplierId, approvedBy));
 	}
 
 	@PutMapping("/{id}/mark-ordered")

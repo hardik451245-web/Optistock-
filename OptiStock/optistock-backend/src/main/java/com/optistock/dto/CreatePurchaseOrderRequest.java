@@ -131,4 +131,24 @@ public class CreatePurchaseOrderRequest {
 	public void setStatus(com.optistock.entity.PurchaseOrderStatus status) {
 		this.status = status;
 	}
+
+	public String getSupplierName() {
+		return supplier;
+	}
+
+	public void setSupplierName(String supplierName) {
+		if (this.supplier == null || this.supplier.isBlank()) {
+			this.supplier = supplierName;
+		}
+	}
+
+	public BigDecimal getUnitCostPrice() {
+		return unitCost;
+	}
+
+	public void setUnitCostPrice(BigDecimal unitCostPrice) {
+		if (this.unitCost == null) {
+			this.unitCost = unitCostPrice;
+		}
+	}
 }

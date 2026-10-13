@@ -236,32 +236,40 @@ export default function NewReorderDialog() {
         activeSupplierName = sup ? sup.name : ''
       }
 
+      let createdOrder = null
       if (isMixMode) {
         const payload = mixItems.map((item) => ({
           productId: item.productId,
           quantity: Number(item.quantity),
+          unitCost: Number(item.unitCost),
           unitCostPrice: Number(item.unitCost),
           supplierId: activeSupplierId,
+          supplier: activeSupplierName,
           supplierName: activeSupplierName,
           expectedDeliveryDate: expectedDate || null,
           notes: notes.trim() || null,
           status: targetStatus,
+          isSuggested: targetStatus !== 'ORDERED',
         }))
 
-        await createBulkPurchaseOrders(payload)
+        const createdList = await createBulkPurchaseOrders(payload)
+        createdOrder = createdList && createdList.length > 0 ? createdList[0] : null
       } else {
         const payload = {
           productId: Number(selectedProductId),
           quantity: Number(quantity),
+          unitCost: Number(unitCost),
           unitCostPrice: Number(unitCost),
           supplierId: activeSupplierId,
+          supplier: activeSupplierName,
           supplierName: activeSupplierName,
           expectedDeliveryDate: expectedDate || null,
           notes: notes.trim() || null,
           status: targetStatus,
+          isSuggested: targetStatus !== 'ORDERED',
         }
 
-        await createPurchaseOrder(payload)
+        createdOrder = await createPurchaseOrder(payload)
       }
 
       setBannerSuccess(
@@ -271,7 +279,10 @@ export default function NewReorderDialog() {
       )
 
       notifyOrderCreated()
-      window.dispatchEvent(new CustomEvent('optistock:order-created'))
+      window.dispatchEvent(new CustomEvent('optistock:order-created', { detail: createdOrder }))
+      if (targetStatus === 'ORDERED' && createdOrder) {
+        window.dispatchEvent(new CustomEvent('optistock:open-po-preview', { detail: createdOrder }))
+      }
 
       setTimeout(() => {
         closeReorder()

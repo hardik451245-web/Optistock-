@@ -20,11 +20,13 @@ import com.optistock.entity.PurchaseOrder;
 import com.optistock.entity.PurchaseOrderStatus;
 import com.optistock.entity.StockMovement;
 import com.optistock.entity.StockMovementType;
+import com.optistock.entity.Supplier;
 import com.optistock.exception.ResourceNotFoundException;
 import com.optistock.exception.StockConflictException;
 import com.optistock.repository.ProductRepository;
 import com.optistock.repository.PurchaseOrderRepository;
 import com.optistock.repository.StockMovementRepository;
+import com.optistock.repository.SupplierRepository;
 
 @Service
 public class PurchaseOrderService {
@@ -32,21 +34,30 @@ public class PurchaseOrderService {
 	private final PurchaseOrderRepository purchaseOrderRepository;
 	private final ProductRepository productRepository;
 	private final StockMovementRepository stockMovementRepository;
+	private final SupplierRepository supplierRepository;
 	private final java.time.Clock clock;
 
 	@org.springframework.beans.factory.annotation.Autowired
 	public PurchaseOrderService(PurchaseOrderRepository purchaseOrderRepository,
 			ProductRepository productRepository, StockMovementRepository stockMovementRepository,
+			SupplierRepository supplierRepository,
 			java.time.Clock clock) {
 		this.purchaseOrderRepository = purchaseOrderRepository;
 		this.productRepository = productRepository;
 		this.stockMovementRepository = stockMovementRepository;
+		this.supplierRepository = supplierRepository;
 		this.clock = clock != null ? clock : java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata"));
 	}
 
 	public PurchaseOrderService(PurchaseOrderRepository purchaseOrderRepository,
+			ProductRepository productRepository, StockMovementRepository stockMovementRepository,
+			SupplierRepository supplierRepository) {
+		this(purchaseOrderRepository, productRepository, stockMovementRepository, supplierRepository, java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata")));
+	}
+
+	public PurchaseOrderService(PurchaseOrderRepository purchaseOrderRepository,
 			ProductRepository productRepository, StockMovementRepository stockMovementRepository) {
-		this(purchaseOrderRepository, productRepository, stockMovementRepository, java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata")));
+		this(purchaseOrderRepository, productRepository, stockMovementRepository, null, java.time.Clock.system(java.time.ZoneId.of("Asia/Kolkata")));
 	}
 
 	@Transactional
@@ -68,11 +79,31 @@ public class PurchaseOrderService {
 		PurchaseOrder po = new PurchaseOrder();
 		po.setProductId(product.getId());
 		po.setQuantity(request.getQuantity());
-		po.setSupplier(request.getSupplier() != null ? request.getSupplier() : "General Supplier");
-		po.setSupplierId(request.getSupplierId());
-		po.setSupplierPhone(request.getSupplierPhone());
-		po.setSupplierWhatsapp(request.getSupplierWhatsapp());
-		po.setSupplierEmail(request.getSupplierEmail());
+
+		Long requestedSupplierId = request.getSupplierId();
+		po.setSupplierId(requestedSupplierId);
+
+		Supplier supplier = null;
+		if (requestedSupplierId != null && supplierRepository != null) {
+			supplier = supplierRepository.findById(requestedSupplierId).orElse(null);
+		}
+
+		if (supplier != null) {
+			po.setSupplier(supplier.getName());
+			po.setSupplierPhone(supplier.getPhone());
+			po.setSupplierWhatsapp(supplier.getWhatsappNumber() != null && !supplier.getWhatsappNumber().isBlank()
+					? supplier.getWhatsappNumber()
+					: supplier.getPhone());
+			po.setSupplierEmail(supplier.getEmail());
+		} else if (request.getSupplier() != null && !request.getSupplier().isBlank()) {
+			po.setSupplier(request.getSupplier());
+			po.setSupplierPhone(request.getSupplierPhone());
+			po.setSupplierWhatsapp(request.getSupplierWhatsapp());
+			po.setSupplierEmail(request.getSupplierEmail());
+		} else {
+			po.setSupplier("General Supplier");
+		}
+
 		po.setUnitCost(request.getUnitCost() != null ? request.getUnitCost() : product.getCostPrice());
 
 		BigDecimal totalCost = request.getTotalCost();
@@ -104,17 +135,45 @@ public class PurchaseOrderService {
 	}
 
 	@Transactional
-	public PurchaseOrderResponse approveOrder(Long id, String approvedBy) {
+	public PurchaseOrderResponse approveOrder(Long id, Long supplierId, String approvedBy) {
 		PurchaseOrder po = purchaseOrderRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Purchase order not found: " + id));
 
 		po.setStatus(PurchaseOrderStatus.ORDERED);
 		po.setApprovedAt(LocalDateTime.now(clock));
 		po.setApprovedBy(approvedBy);
+
+		if (supplierId != null) {
+			po.setSupplierId(supplierId);
+		}
+
+		if (po.getSupplierId() != null && supplierRepository != null) {
+			Supplier sup = supplierRepository.findById(po.getSupplierId()).orElse(null);
+			if (sup != null) {
+				po.setSupplier(sup.getName());
+				if (sup.getPhone() != null && !sup.getPhone().isBlank()) {
+					po.setSupplierPhone(sup.getPhone());
+				}
+				if (sup.getWhatsappNumber() != null && !sup.getWhatsappNumber().isBlank()) {
+					po.setSupplierWhatsapp(sup.getWhatsappNumber());
+				} else if (sup.getPhone() != null && !sup.getPhone().isBlank()) {
+					po.setSupplierWhatsapp(sup.getPhone());
+				}
+				if (sup.getEmail() != null && !sup.getEmail().isBlank()) {
+					po.setSupplierEmail(sup.getEmail());
+				}
+			}
+		}
+
 		po = purchaseOrderRepository.save(po);
 
 		Product product = productRepository.findById(po.getProductId()).orElse(null);
 		return toResponse(po, product != null ? product.getName() : "Product #" + po.getProductId());
+	}
+
+	@Transactional
+	public PurchaseOrderResponse approveOrder(Long id, String approvedBy) {
+		return approveOrder(id, null, approvedBy);
 	}
 
 	@Transactional
@@ -180,8 +239,31 @@ public class PurchaseOrderService {
 		Map<Long, String> productNames = productRepository.findAll().stream()
 				.collect(Collectors.toMap(Product::getId, Product::getName, (a, b) -> a));
 
+		Map<Long, Supplier> suppliersById = supplierRepository != null
+				? supplierRepository.findAll().stream().collect(Collectors.toMap(Supplier::getId, s -> s, (a, b) -> a))
+				: java.util.Collections.emptyMap();
+
 		return orders.stream()
-				.map(po -> toResponse(po, productNames.getOrDefault(po.getProductId(), "Unknown Product")))
+				.map(po -> {
+					if (po.getSupplierId() != null && suppliersById.containsKey(po.getSupplierId())) {
+						Supplier s = suppliersById.get(po.getSupplierId());
+						if (po.getSupplier() == null || po.getSupplier().isBlank() || "General Supplier".equals(po.getSupplier())) {
+							po.setSupplier(s.getName());
+						}
+						if (po.getSupplierPhone() == null || po.getSupplierPhone().isBlank()) {
+							po.setSupplierPhone(s.getPhone());
+						}
+						if (po.getSupplierWhatsapp() == null || po.getSupplierWhatsapp().isBlank()) {
+							po.setSupplierWhatsapp(s.getWhatsappNumber() != null && !s.getWhatsappNumber().isBlank()
+									? s.getWhatsappNumber()
+									: s.getPhone());
+						}
+						if (po.getSupplierEmail() == null || po.getSupplierEmail().isBlank()) {
+							po.setSupplierEmail(s.getEmail());
+						}
+					}
+					return toResponse(po, productNames.getOrDefault(po.getProductId(), "Unknown Product"));
+				})
 				.collect(Collectors.toList());
 	}
 
@@ -291,6 +373,26 @@ public class PurchaseOrderService {
 		res.setSentChannel(po.getSentChannel());
 		res.setApprovedAt(po.getApprovedAt());
 		res.setApprovedBy(po.getApprovedBy());
+
+		// Ensure supplier fields are loaded from supplier relation if supplierId is present
+		if (po.getSupplierId() != null && supplierRepository != null
+				&& (res.getSupplierPhone() == null || res.getSupplierEmail() == null || "General Supplier".equals(res.getSupplier()))) {
+			supplierRepository.findById(po.getSupplierId()).ifPresent(sup -> {
+				res.setSupplier(sup.getName());
+				if (res.getSupplierPhone() == null || res.getSupplierPhone().isBlank()) {
+					res.setSupplierPhone(sup.getPhone());
+				}
+				if (res.getSupplierWhatsapp() == null || res.getSupplierWhatsapp().isBlank()) {
+					res.setSupplierWhatsapp(sup.getWhatsappNumber() != null && !sup.getWhatsappNumber().isBlank()
+							? sup.getWhatsappNumber()
+							: sup.getPhone());
+				}
+				if (res.getSupplierEmail() == null || res.getSupplierEmail().isBlank()) {
+					res.setSupplierEmail(sup.getEmail());
+				}
+			});
+		}
+
 		return res;
 	}
 }

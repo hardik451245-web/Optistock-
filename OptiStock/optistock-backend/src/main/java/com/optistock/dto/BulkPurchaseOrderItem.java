@@ -95,4 +95,24 @@ public class BulkPurchaseOrderItem {
 	public void setIsSuggested(Boolean isSuggested) {
 		this.isSuggested = isSuggested;
 	}
+
+	public String getSupplierName() {
+		return supplier;
+	}
+
+	public void setSupplierName(String supplierName) {
+		if (this.supplier == null || this.supplier.isBlank()) {
+			this.supplier = supplierName;
+		}
+	}
+
+	public BigDecimal getUnitCostPrice() {
+		return unitCost;
+	}
+
+	public void setUnitCostPrice(BigDecimal unitCostPrice) {
+		if (this.unitCost == null) {
+			this.unitCost = unitCostPrice;
+		}
+	}
 }
