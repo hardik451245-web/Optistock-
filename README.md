@@ -4,6 +4,20 @@
 
 ---
 
+## Live Demo
+
+- **Live Application (Frontend):** [https://optistock-kappa.vercel.app/](https://optistock-kappa.vercel.app/)
+- **API Service (Backend):** [https://optistock-backend-syu1.onrender.com](https://optistock-backend-syu1.onrender.com)
+- **Health Check:** [https://optistock-backend-syu1.onrender.com/health](https://optistock-backend-syu1.onrender.com/health)
+
+### Demo Credentials
+| Role | Email | Password | Access |
+| :--- | :--- | :--- | :--- |
+| **Manager** | `manager@optistock.com` | `manager123` | Executive dashboard, analytics, forecasting, 80-20 mix, reorders |
+| **Cashier** | `cashier@optistock.com` | `cashier123` | Spatial POS billing, shelf search, discount authorization requests |
+
+---
+
 ## Overview & Problem Statement
 
 Retail grocery and convenience stores encounter severe operational profit leaks due to two primary challenges:

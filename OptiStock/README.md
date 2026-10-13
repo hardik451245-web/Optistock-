@@ -4,6 +4,18 @@
 
 ---
 
+## Live Demo
+
+- **Frontend (Vercel):** [https://optistock-kappa.vercel.app/](https://optistock-kappa.vercel.app/)
+- **Backend (Render):** [https://optistock-backend-syu1.onrender.com](https://optistock-backend-syu1.onrender.com)
+- **Health Check:** [https://optistock-backend-syu1.onrender.com/health](https://optistock-backend-syu1.onrender.com/health)
+
+### Demo Credentials
+- **Manager:** `manager@optistock.com` / `manager123`
+- **Cashier:** `cashier@optistock.com` / `cashier123`
+
+---
+
 ## Directory Overview
 
 - **`optistock-backend/`**: Java 17 + Spring Boot 3.3.4 REST API service.

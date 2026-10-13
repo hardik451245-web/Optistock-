@@ -69,7 +69,7 @@ export default async function handler(req, res) {
   }
 
   // 1. If backend URL is defined, proxy request
-  const backendUrl = process.env.BACKEND_URL || process.env.VITE_API_BASE_URL;
+  const backendUrl = process.env.BACKEND_URL || process.env.VITE_API_BASE_URL || 'https://optistock-backend-syu1.onrender.com';
   if (backendUrl) {
     try {
       const cleanBase = backendUrl.replace(/\/+$/, '');
