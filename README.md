@@ -109,3 +109,4 @@ Run frontend production build:
 cd optistock-frontend
 npm run build
 ```
+# OptistockAi
