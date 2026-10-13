@@ -1,0 +1,11 @@
+{
+  "framework": "vite",
+  "buildCommand": "cd OptiStock/optistock-frontend && npm install && npm run build",
+  "outputDirectory": "OptiStock/optistock-frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

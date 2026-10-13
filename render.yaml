@@ -1,0 +1,27 @@
+services:
+  # OptiStock AI - Backend Service
+  - type: web
+    name: optistock-backend
+    env: docker
+    dockerfilePath: OptiStock/optistock-backend/Dockerfile
+    dockerContext: OptiStock/optistock-backend
+    plan: free
+    healthCheckPath: /api/products
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: demo
+      - key: OPTISTOCK_MANAGER_CODE
+        value: OPTISTOCK-MGR-2026
+
+  # OptiStock AI - Frontend Static Site
+  - type: web
+    name: optistock-frontend
+    env: static
+    rootDir: OptiStock/optistock-frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    plan: free
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

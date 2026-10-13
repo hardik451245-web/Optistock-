@@ -94,11 +94,16 @@ public class SecurityConfig {
 	CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
 		String corsEnv = System.getenv("CORS_ALLOWED_ORIGINS");
-		List<String> origins;
+		List<String> origins = new java.util.ArrayList<>(List.of(
+				"http://localhost:*",
+				"http://127.0.0.1:*",
+				"https://*.vercel.app",
+				"https://*.netlify.app",
+				"https://*.onrender.com",
+				"https://*.pages.dev"
+		));
 		if (corsEnv != null && !corsEnv.trim().isEmpty()) {
-			origins = java.util.Arrays.stream(corsEnv.split(",")).map(String::trim).toList();
-		} else {
-			origins = List.of("http://localhost:*", "http://127.0.0.1:*");
+			origins.addAll(java.util.Arrays.stream(corsEnv.split(",")).map(String::trim).toList());
 		}
 		configuration.setAllowedOriginPatterns(origins);
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

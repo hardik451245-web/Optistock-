@@ -1,6 +1,7 @@
 import { clearAuth, getToken } from './auth'
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const RAW_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').trim()
+const BASE_URL = RAW_BASE_URL.replace(/\/+$/, '')
 
 async function request(path, options = {}) {
   const headers = {
