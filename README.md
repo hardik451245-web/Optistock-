@@ -1,112 +1,227 @@
-# OptiStock - Retail Inventory and Billing Platform
+# OptiStock AI
 
-OptiStock is a retail point of sale (POS) and inventory optimization system engineered to track stock movements, automate expiry markdowns, safeguard profit margins, and deliver predictive demand analytics.
+> **Smarter Inventory | Higher Profits** — An intelligent retail stock management, dynamic expiry pricing, and point-of-sale optimization platform.
+
+---
+
+## Overview & Problem Statement
+
+Retail grocery and convenience stores encounter severe operational profit leaks due to two primary challenges:
+1. **Perishable Shrinkage & Expiry Waste:** Manual shelf tracking leads to expired stock being thrown away at 100% loss rather than discounted early enough to recover cost.
+2. **Margin Erosion & Stockouts:** Unchecked cashier discounting compromises minimum gross margins, while inaccurate manual reordering leads to high-demand stockouts and overstocking of slow-moving inventory.
+
+**OptiStock AI** resolves these challenges by uniting Point of Sale (POS) operations with an automated inventory optimization engine. It continuously calculates days-to-expiry with dynamic automated markdowns, enforces minimum profit margin guardrails, provides weighted moving average (WMA) demand forecasting, and analyzes brand profitability using the 80/20 Pareto principle.
+
+---
+
+## Screenshots
+
+> *Add application screenshots and demo captures below:*
+
+| Manager Executive Dashboard | Spatial Cashier POS |
+| :---: | :---: |
+| *(Insert Screenshot of Executive Dashboard)* | *(Insert Screenshot of Cashier Billing Terminal)* |
+
+| Demand Forecast & Recharts Analytics | 80/20 Mix Profit Optimizer |
+| :---: | :---: |
+| *(Insert Screenshot of Demand Forecasting)* | *(Insert Screenshot of 80/20 Brand Comparison)* |
+
+---
+
+## Key Features
+
+### 1. Smart Stock Tracking & Double-Entry Ledger
+- **Complete Movement Audit:** Tracks every stock modification (`SALE`, `PURCHASE`, `CANCEL_RESTORE`, `ADJUSTMENT`, `WRITE_OFF`) with timestamps, quantities, and reference IDs.
+- **Product Catalog Management:** Add, edit, catalog-search, and safely soft-delete (archive) products without breaking historical transaction ledger integrity.
+
+### 2. Automated Dynamic Expiry Markdown Engine
+- **Clock-Consistent Rules (Asia/Kolkata):**
+  - **Expired (< 0 days):** Sale strictly locked out with `400 Bad Request`.
+  - **Last Day (0 days remaining):** 70% automatic promotional clearance markdown.
+  - **1 to 2 Days Remaining:** 50% automatic markdown.
+  - **3 to 4 Days Remaining:** Flagged for shelf front-rotation at regular price.
+  - **5+ Days / Non-perishable:** Standard shelf price.
+- **Expiry Guard on Restock:** Receiving purchase orders requires batch expiry dates for perishable items to maintain continuous tracking.
+
+### 3. Profit Margin Guardrail & Cashier Approval Flow
+- **10% Minimum Margin Protection:** Rejects arbitrary manual discounts that breach minimum gross profit with `409 Conflict`.
+- **Digital Override Workflow:** Cashiers can submit discount authorization requests with custom reasons; managers review, approve, or reject them in real time from their dashboard.
+
+### 4. Predictive Demand Forecasting (WMA Engine)
+- **Weighted Moving Average (WMA):** Prioritizes recent momentum (recent 7 days weighted 2x, days 8-30 weighted 1x).
+- **30-Day Projections:** Computes estimated daily burn rate, total monthly demand, and days of cover.
+- **Perishable-Aware Reorder Caps:** Automatic reorder recommendations capped at product shelf life to prevent over-ordering perishables.
+- **Interactive Analytics:** Recharts historical demand curves, forecast trajectories, and 95% confidence intervals with CSV export.
+
+### 5. 80/20 Brand Mix Profit Optimizer
+- **Pareto Principle Analytics:** Identifies high-margin vs high-volume product types (e.g., Amul vs Milky Mist).
+- **Automated Rebalancing Suggestions:** Provides data-driven recommendations on product distribution to maximize net profit.
+- **One-Click Mix Ordering:** Triggers multi-product purchase orders calculated according to recommended brand ratios.
+
+### 6. Unified Purchase Order & Reorder System
+- **Centralized Reorder Architecture:** Modal dialog accessible across Low Stock Alerts, Stock Ledger, Demand Forecast, and the Pareto Mix page.
+- **Status Lifecycle:** Tracks purchase orders through `SUGGESTED`, `ORDERED`, `IN_TRANSIT`, `RECEIVED`, and `CANCELLED`.
+- **Supplier Directory:** Integrated vendor contacts, WhatsApp order links, and instant supplier creation.
+
+### 7. Dual-Role Authentication & Security
+- **Role-Based Access Control (RBAC):** Distinct dashboards and capabilities for `MANAGER` and `CASHIER`.
+- **Stateless Bearer Tokens & BCrypt:** Cryptographically secure password hashing and rate-limited authentication endpoints.
+
+---
 
 ## Tech Stack
 
 ### Backend
-- Java: 17+ (tested with Java 17 and Java 26)
-- Framework: Spring Boot 3.3.4 (REST, Data JPA, Security)
-- Security: Spring Security 6 with BCrypt password hashing, in-memory stateless Bearer Token authentication, and login rate limiting
-- Database:
-  - Production: MySQL 8 (configured via environment variables)
-  - Demo and Testing: In-memory H2 with MySQL compatibility mode
-- Build Tool: Apache Maven 3.9+
+- **Language:** Java 17+ (LTS)
+- **Framework:** Spring Boot 3.3.4 (Spring MVC, Spring Data JPA, Spring Security 6)
+- **Database:**
+  - Production: MySQL 8 (externalized connection pool via environment variables)
+  - Demo / Tests: In-Memory H2 with MySQL syntax compatibility mode
+- **Build Tool:** Apache Maven 3.9+
+- **Testing:** JUnit 5, Mockito, Spring Boot Test
 
 ### Frontend
-- Framework: React 19 + Vite
-- Icons: Lucide React
-- Charts and Visualizations: Recharts
-- Styling: Vanilla CSS with custom tokens (Manager dark slate/teal glassmorphism, Cashier light neutral spatial POS)
+- **Framework:** React 19 + Vite
+- **Data Visualization:** Recharts
+- **Iconography:** Lucide React
+- **Styling:** Custom Design System (Dark Slate/Teal Manager Dashboard, Neutral Spatial Cashier POS)
+- **E2E Testing:** Playwright
 
-## Quick Start (Demo Mode)
+---
 
-OptiStock includes a demo mode that starts with an in-memory database pre-seeded with:
-- Default MANAGER and CASHIER accounts
-- 40 retail products across 8 categories
-- 30 days of realistic sales transactions and stock movement ledger history
+## Repository Structure
 
-### 1. Start the Backend
-From the root directory:
+```
+optistock/
+├── .github/                       # GitHub workflows and CI configurations
+├── optistock-frontend/            # React 19 + Vite frontend
+│   ├── src/
+│   │   ├── components/            # Cashier and Manager UI components
+│   │   │   ├── cashier/           # Cashier billing, cart, and receipt modals
+│   │   │   └── manager/           # Executive dashboard, alerts, forecast, ledger
+│   │   ├── context/               # Global state (ReorderContext, Auth)
+│   │   ├── pages/                 # ManagerDashboard and CashierDashboard views
+│   │   └── styles/                # CSS design system and tokens
+│   ├── tests/                     # Playwright E2E test suites (manager & cashier)
+│   ├── package.json
+│   └── vite.config.js
+├── src/                           # Spring Boot backend
+│   ├── main/
+│   │   ├── java/com/optistock/
+│   │   │   ├── config/            # Clock, Security, and DemoDataSeeder
+│   │   │   ├── controller/        # REST controllers (Manager, Bill, Stock, etc.)
+│   │   │   ├── dto/               # Request & response data transfer objects
+│   │   │   ├── entity/            # JPA entities (Product, Bill, PurchaseOrder, etc.)
+│   │   │   ├── repository/        # Spring Data JPA repositories
+│   │   │   └── service/           # Business logic & forecast algorithms
+│   │   └── resources/             # Application properties & SQL configs
+│   └── test/                      # Comprehensive JUnit & Mockito test suite
+├── .env.example                   # Environment configuration template
+├── .gitignore                     # Git ignore rules for Java, Node, IDEs, and DBs
+├── LICENSE                        # MIT License
+├── pom.xml                        # Maven project descriptor
+└── README.md                      # Documentation
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+- **Java Development Kit (JDK):** Version 17 or higher
+- **Node.js:** Version 18 or higher (with npm)
+- **Maven:** Version 3.8+ (or use included wrapper if available)
+- *(Optional for Production)*: **MySQL Server 8.0+**
+
+---
+
+### Quick Start (Demo Mode)
+
+OptiStock includes a standalone zero-config demo mode pre-seeded with 40+ products, suppliers, 30 days of sales history, and test user accounts.
+
+#### 1. Start the Backend Server
 ```bash
+# In the project root directory:
 mvn spring-boot:run "-Dspring-boot.run.profiles=demo"
 ```
-The REST API starts at `http://localhost:8080`.
+The Spring Boot backend will start on `http://localhost:8080`.
 
-### 2. Start the Frontend
-In a separate terminal:
+#### 2. Start the Frontend Application
 ```bash
+# Open a new terminal in the project root:
 cd optistock-frontend
 npm install
 npm run dev
 ```
 Open `http://localhost:5173` in your browser.
 
-## Default Credentials (Demo Profile)
+---
 
-| Role | Email | Password | Access Level |
+### Demo User Accounts
+
+| Role | Email | Password | Privileges |
 | :--- | :--- | :--- | :--- |
-| Manager | manager@optistock.com | manager123 | Full dashboard, stock ledger, reorders, forecasting, approvals |
-| Cashier | cashier@optistock.com | cashier123 | Point of sale billing, shelf search, discount authorization requests |
+| **Manager** | `manager@optistock.com` | `manager123` | Full analytics, forecasting, 80/20 mix, purchase orders, catalog management |
+| **Cashier** | `cashier@optistock.com` | `cashier123` | Quick barcode/shelf POS billing, receipts, discount requests |
 
-## Production Setup
+---
 
-To connect to a live MySQL 8 instance:
-1. Ensure MySQL is running on port 3306.
-2. Create the database:
+### Production Deployment (MySQL)
+
+1. Create a MySQL database:
    ```sql
-   CREATE DATABASE IF NOT EXISTS optistock;
+   CREATE DATABASE optistock CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   ```
+2. Copy `.env.example` to `.env` and configure your credentials:
+   ```bash
+   cp .env.example .env
    ```
 3. Set environment variables:
    ```bash
    export DB_URL="jdbc:mysql://localhost:3306/optistock?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true"
-   export DB_USERNAME="root"
+   export DB_USERNAME="your_mysql_user"
    export DB_PASSWORD="your_mysql_password"
-   export OPTISTOCK_MANAGER_CODE="your_manager_registration_code"
-   export CORS_ALLOWED_ORIGINS="https://app.yourdomain.com"
+   export SPRING_PROFILES_ACTIVE="default"
    ```
-4. Run the backend without the demo profile:
+4. Run the production backend:
    ```bash
-   mvn spring-boot:run
+   mvn clean spring-boot:run
+   ```
+5. Build the frontend for production:
+   ```bash
+   cd optistock-frontend
+   npm run build
    ```
 
-## Core Features
+---
 
-### 1. Dynamic Expiry Markdown Engine (ExpiryPricingService)
-- Automated discount calculation based on shelf life remaining (Asia/Kolkata timezone):
-  - EXPIRED (< 0 days): Sale strictly prohibited (returns 400 Bad Request).
-  - LAST DAY (0 days left): 70% automatic markdown.
-  - MARKDOWN (1 to 2 days left): 50% automatic markdown.
-  - EXPIRING SOON (3 to 4 days left): Flagged for rotation at standard price.
-  - NORMAL (5+ days or no expiry): Standard shelf price.
+## Running Tests
 
-### 2. Profit Margin Guardrails (BillService)
-- Protects store margins (configured at 10% minimum margin).
-- If a cashier enters a manual discount that breaches the threshold, the system rejects the transaction with 409 Conflict.
-- Cashiers submit an electronic discount request that managers review and approve directly from their dashboard.
-
-### 3. Stock and Reorder Flow (PurchaseOrderService and StockService)
-- Complete stock movement ledger tracking SALE, PURCHASE, CANCEL_RESTORE, ADJUSTMENT, and WRITE_OFF types.
-- Purchase orders workflow: ORDERED, RECEIVED, CANCELLED.
-- Perishables safety: new batch expiry date required on receipt.
-- Soft delete / archiving: deactivated products are preserved in historical ledger while hidden from active shelves and billing.
-
-### 4. Predictive Demand Forecasting (ManagerService)
-- Weighted Moving Average (WMA): Most recent 7 days count double, days 8 to 30 count single.
-- 30-Day Demand Forecast: ceil(AvgDailySales * 30).
-- Days of Cover: Current Stock / AvgDailySales.
-- Suggested Reorder Quantity: max(0, ceil(Forecast30 * 1.10) - Stock - OnOrder), capped for perishables.
-
-## Testing
-
-Run backend JUnit test suite (32 unit and integration tests):
+### Backend Unit & Integration Tests (JUnit 5)
 ```bash
 mvn test
 ```
+*Executes all 38 test suites across billing, markdown rules, demand forecasting, stock movements, and clock consistency.*
 
-Run frontend production build:
+### Frontend End-to-End Tests (Playwright)
 ```bash
 cd optistock-frontend
-npm run build
+npx playwright test
 ```
-# OptistockAi
+*Validates full manager and cashier interactive user journeys, hit-testing, and state persistence.*
+
+---
+
+## Future Scope & Roadmap
+
+- [ ] **Barcode & QR Scanner Hardware Integration:** Direct USB and camera-based barcode scanning for rapid checkout.
+- [ ] **Multi-Branch & Warehouse Synchronization:** Centralized inventory tracking across multiple retail store outlets.
+- [ ] **AI-Powered Seasonal Trend Detection:** Enhanced machine learning models incorporating holidays, weather patterns, and local festivities into reorder suggestions.
+- [ ] **Supplier EDI / Automated Email Invoicing:** Automated purchase order PDF transmission directly to suppliers upon approval.
+- [ ] **Customer Loyalty & SMS Digital Receipts:** Paperless checkout with customer transaction history and loyalty points.
+
+---
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).

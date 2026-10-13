@@ -1,27 +1,69 @@
-# Build outputs
+# Build & Compilation Outputs
 target/
+build/
 dist/
+optistock-frontend/dist/
 *.class
+*.jar
+*.war
 
-# Node / Frontend
+# Node & Frontend Dependencies
 node_modules/
 optistock-frontend/node_modules/
-optistock-frontend/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# IDE / Editors
+# Python & Virtual Environments
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database Files
+*.db
+*.sqlite
+*.sqlite3
+*.h2.db
+*.mv.db
+*.trace.db
+
+# IDEs & Editors
 .idea/
 *.iml
 .vscode/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
 
-# OS metadata
-desktop.ini
-Thumbs.db
-.DS_Store
-
-# Environment & Local Configuration
+# Environment Variables & Secrets
 .env
 .env.*
+!.env.example
 application-local.properties
 
 # Logs
 *.log
+logs/
+
+# Testing & Reports
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# OS Metadata
+desktop.ini
+Thumbs.db
+.DS_Store
+ehthumbs.db
+
+# Assistant & Agent Tooling Cache
+.agent/
+.agents/
+.gemini/
+.gsd/
